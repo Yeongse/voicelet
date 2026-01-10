@@ -1,0 +1,57 @@
+module "artifact-registry" {
+  source       = "./modules/artifact-registry"
+  location     = local.location
+  service_name = local.service_name
+}
+
+module "account" {
+  source           = "./modules/account"
+  project          = local.project
+  service_name     = local.service_name
+  run_app_executor = local.run_app_executor
+}
+
+module "secrets" {
+  source       = "./modules/secrets"
+  service_name = local.service_name
+  sa_email     = module.account.run_app_executor_email
+}
+
+module "run-service" {
+  source          = "./modules/run-service"
+  project         = local.project
+  location        = local.location
+  service_name    = local.service_name
+  domain          = local.domain_name
+  sa_email        = module.account.run_app_executor_email
+  gcs_bucket_name = module.storage.bucket_name
+
+  depends_on = [module.secrets]
+}
+
+module "dns" {
+  source         = "./modules/dns/"
+  service_name   = local.service_name
+  domain         = local.domain_name
+  is_apex_domain = true
+  # dns_records_A    = module.run-service.dns_records_A
+  # dns_records_AAAA = module.run-service.dns_records_AAAA
+  # dns_record_WWW   = module.run-service.dns_record_WWW
+}
+
+module "storage" {
+  source       = "./modules/storage"
+  project      = local.project
+  location     = local.location
+  service_name = local.service_name
+  sa_email     = module.account.run_app_executor_email
+  environment  = "dev"
+}
+
+module "cron" {
+  source        = "./modules/cron"
+  service_name  = local.service_name
+  location      = local.location
+  cloud_run_url = module.run-service.url
+  sa_email      = module.account.run_app_executor_email
+}

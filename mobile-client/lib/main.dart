@@ -9,14 +9,19 @@ import 'features/users/pages/user_list_page.dart';
 import 'features/users/pages/user_detail_page.dart';
 import 'features/recording/pages/recording_page.dart';
 import 'features/recording/pages/preview_page.dart';
+import 'features/splash/pages/splash_page.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
 }
 
 final _router = GoRouter(
-  initialLocation: '/recording',
+  initialLocation: '/',
   routes: [
+    GoRoute(
+      path: '/',
+      builder: (context, state) => const SplashPage(),
+    ),
     GoRoute(
       path: '/users',
       builder: (context, state) => const UserListPage(),

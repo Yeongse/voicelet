@@ -47,3 +47,6 @@ flutter_launcher_icons:
 flutter:
   generate: true
   uses-material-design: true
+  assets:
+    - assets/icon.png
+    - assets/main_background.png

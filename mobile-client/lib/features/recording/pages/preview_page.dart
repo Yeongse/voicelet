@@ -5,7 +5,6 @@ import 'package:audioplayers/audioplayers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../services/storage_service.dart';
 import '../widgets/waveform_indicator.dart';
-import '../widgets/particle_background.dart';
 
 /// プレビュー画面
 class PreviewPage extends StatefulWidget {
@@ -25,7 +24,7 @@ class PreviewPage extends StatefulWidget {
 }
 
 class _PreviewPageState extends State<PreviewPage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final AudioPlayer _audioPlayer = AudioPlayer();
   final StorageService _storageService = StorageService();
 
@@ -39,6 +38,7 @@ class _PreviewPageState extends State<PreviewPage>
   StreamSubscription<Duration>? _durationSubscription;
 
   late AnimationController _fadeController;
+  late AnimationController _glowController;
   late Animation<double> _fadeAnimation;
 
   @override
@@ -52,13 +52,18 @@ class _PreviewPageState extends State<PreviewPage>
   void _setupAnimations() {
     _fadeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 800),
     );
     _fadeAnimation = CurvedAnimation(
       parent: _fadeController,
       curve: Curves.easeOut,
     );
     _fadeController.forward();
+
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2500),
+    )..repeat(reverse: true);
   }
 
   Future<void> _initPlayer() async {
@@ -112,7 +117,7 @@ class _PreviewPageState extends State<PreviewPage>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.bgElevated,
+        backgroundColor: AppTheme.bgElevated.withValues(alpha: 0.95),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.radiusXl),
         ),
@@ -158,6 +163,7 @@ class _PreviewPageState extends State<PreviewPage>
     _durationSubscription?.cancel();
     _audioPlayer.dispose();
     _fadeController.dispose();
+    _glowController.dispose();
     super.dispose();
   }
 
@@ -177,38 +183,93 @@ class _PreviewPageState extends State<PreviewPage>
         ? _position.inMilliseconds / effectiveDuration.inMilliseconds
         : 0.0;
 
-    return ParticleBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_rounded,
-              color: AppTheme.textSecondary,
-            ),
-            onPressed: () => context.pop(),
+    return Scaffold(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 背景画像
+          Image.asset(
+            'assets/main_background.png',
+            fit: BoxFit.cover,
           ),
-          title: const Text(
-            'Preview',
-            style: TextStyle(
-              fontFamily: 'Quicksand',
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimary,
+          // グラデーションオーバーレイ
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.3),
+                  Colors.black.withValues(alpha: 0.15),
+                  Colors.black.withValues(alpha: 0.15),
+                  Colors.black.withValues(alpha: 0.4),
+                ],
+                stops: const [0.0, 0.3, 0.7, 1.0],
+              ),
             ),
           ),
-          centerTitle: true,
-        ),
-        body: SafeArea(
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppTheme.space6),
+          // コンテンツ
+          SafeArea(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
               child: Column(
                 children: [
-                  const Spacer(flex: 2),
+                  // AppBar
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTheme.space2,
+                      vertical: AppTheme.space2,
+                    ),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.arrow_back_rounded,
+                              color: AppTheme.textPrimary,
+                              size: 20,
+                            ),
+                          ),
+                          onPressed: () => context.pop(),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'プレビュー',
+                            style: TextStyle(
+                              fontFamily: 'Quicksand',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textPrimary,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black.withValues(alpha: 0.5),
+                                  blurRadius: 8,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        const SizedBox(width: 48), // バランス用
+                      ],
+                    ),
+                  ),
+
+                  const Spacer(flex: 1),
 
                   // 録音完了メッセージ
                   Container(
@@ -217,41 +278,63 @@ class _PreviewPageState extends State<PreviewPage>
                       vertical: AppTheme.space3,
                     ),
                     decoration: BoxDecoration(
-                      color: AppTheme.accentPrimary.withValues(alpha: 0.15),
+                      color: AppTheme.accentPrimary.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                      border: Border.all(
+                        color: AppTheme.accentPrimary.withValues(alpha: 0.3),
+                      ),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           Icons.check_circle_rounded,
                           color: AppTheme.accentPrimary,
                           size: 18,
+                          shadows: [
+                            Shadow(
+                              color: AppTheme.accentPrimary.withValues(alpha: 0.5),
+                              blurRadius: 10,
+                            ),
+                          ],
                         ),
-                        SizedBox(width: AppTheme.space2),
+                        const SizedBox(width: AppTheme.space2),
                         Text(
                           '録音が完了しました',
                           style: TextStyle(
                             color: AppTheme.accentPrimary,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withValues(alpha: 0.3),
+                                blurRadius: 8,
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
 
-                  const SizedBox(height: AppTheme.space10),
+                  const SizedBox(height: AppTheme.space8),
 
                   // 録音時間
                   Text(
                     _formatDuration(effectiveDuration),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'JetBrains Mono',
-                      fontSize: 48,
+                      fontSize: 56,
                       fontWeight: FontWeight.w300,
                       color: AppTheme.textPrimary,
-                      letterSpacing: 4,
+                      letterSpacing: 6,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          blurRadius: 15,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                   ),
 
@@ -260,8 +343,16 @@ class _PreviewPageState extends State<PreviewPage>
                   // 波形表示
                   Container(
                     height: 100,
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: AppTheme.space6,
+                    ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppTheme.space4,
+                      vertical: AppTheme.space3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                     ),
                     child: PlaybackWaveformIndicator(
                       waveformData: _waveformData,
@@ -269,35 +360,56 @@ class _PreviewPageState extends State<PreviewPage>
                       config: const WaveformConfig(
                         waveColor: AppTheme.textTertiary,
                         progressColor: AppTheme.accentPrimary,
-                        height: 100,
+                        height: 80,
                         showProgress: true,
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: AppTheme.space4),
+                  const SizedBox(height: AppTheme.space3),
 
                   // 再生位置表示
                   Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: AppTheme.space4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTheme.space6 + AppTheme.space4,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          _formatDuration(_position),
-                          style: const TextStyle(
-                            fontFamily: 'JetBrains Mono',
-                            fontSize: 12,
-                            color: AppTheme.textTertiary,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _formatDuration(_position),
+                            style: const TextStyle(
+                              fontFamily: 'JetBrains Mono',
+                              fontSize: 12,
+                              color: AppTheme.textSecondary,
+                            ),
                           ),
                         ),
-                        Text(
-                          _formatDuration(effectiveDuration),
-                          style: const TextStyle(
-                            fontFamily: 'JetBrains Mono',
-                            fontSize: 12,
-                            color: AppTheme.textTertiary,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _formatDuration(effectiveDuration),
+                            style: const TextStyle(
+                              fontFamily: 'JetBrains Mono',
+                              fontSize: 12,
+                              color: AppTheme.textSecondary,
+                            ),
                           ),
                         ),
                       ],
@@ -307,64 +419,101 @@ class _PreviewPageState extends State<PreviewPage>
                   const Spacer(),
 
                   // 再生ボタン
-                  GestureDetector(
-                    onTap: _togglePlayback,
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: AppTheme.gradientAccent,
-                        boxShadow: AppTheme.glowAccent,
-                      ),
-                      child: Icon(
-                        isPlaying
-                            ? Icons.pause_rounded
-                            : Icons.play_arrow_rounded,
-                        color: AppTheme.textInverse,
-                        size: 40,
-                      ),
-                    ),
+                  AnimatedBuilder(
+                    animation: _glowController,
+                    builder: (context, child) {
+                      final glowIntensity = 0.25 + (_glowController.value * 0.15);
+                      return GestureDetector(
+                        onTap: _togglePlayback,
+                        child: Container(
+                          width: 90,
+                          height: 90,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: AppTheme.gradientAccent,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.accentPrimary
+                                    .withValues(alpha: glowIntensity),
+                                blurRadius: 35,
+                                spreadRadius: 5,
+                              ),
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.3),
+                                blurRadius: 15,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            isPlaying
+                                ? Icons.pause_rounded
+                                : Icons.play_arrow_rounded,
+                            color: AppTheme.textInverse,
+                            size: 44,
+                          ),
+                        ),
+                      );
+                    },
                   ),
 
-                  const SizedBox(height: AppTheme.space10),
+                  const SizedBox(height: AppTheme.space8),
 
                   // アクションボタン
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildActionButton(
-                          icon: Icons.refresh_rounded,
-                          label: '再録音',
-                          onTap: _showReRecordConfirmation,
-                          isDestructive: true,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTheme.space6,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildActionButton(
+                            icon: Icons.refresh_rounded,
+                            label: '再録音',
+                            onTap: _showReRecordConfirmation,
+                            isDestructive: true,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: AppTheme.space4),
-                      Expanded(
-                        child: _buildActionButton(
-                          icon: Icons.check_rounded,
-                          label: '保存する',
-                          onTap: () {
-                            // Phase 2: クラウドアップロード
-                            // 今はローカル保存のみ
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('録音を保存しました'),
-                                backgroundColor: AppTheme.bgElevated,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    AppTheme.radiusMd,
+                        const SizedBox(width: AppTheme.space4),
+                        Expanded(
+                          child: _buildActionButton(
+                            icon: Icons.send_rounded,
+                            label: '投稿する',
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.check_circle_rounded,
+                                        color: AppTheme.accentPrimary,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      const Text(
+                                        '投稿しました',
+                                        style: TextStyle(
+                                          color: AppTheme.textPrimary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  backgroundColor:
+                                      AppTheme.bgElevated.withValues(alpha: 0.95),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      AppTheme.radiusMd,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                          isPrimary: true,
+                              );
+                            },
+                            isPrimary: true,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
 
                   const Spacer(flex: 2),
@@ -372,7 +521,7 @@ class _PreviewPageState extends State<PreviewPage>
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -387,19 +536,35 @@ class _PreviewPageState extends State<PreviewPage>
     final Color bgColor;
     final Color textColor;
     final Color iconColor;
+    final List<BoxShadow>? boxShadow;
 
     if (isPrimary) {
       bgColor = AppTheme.accentPrimary;
       textColor = AppTheme.textInverse;
       iconColor = AppTheme.textInverse;
+      boxShadow = [
+        BoxShadow(
+          color: AppTheme.accentPrimary.withValues(alpha: 0.4),
+          blurRadius: 15,
+          spreadRadius: 1,
+        ),
+      ];
     } else if (isDestructive) {
-      bgColor = AppTheme.error.withValues(alpha: 0.15);
-      textColor = AppTheme.error;
-      iconColor = AppTheme.error;
+      bgColor = Colors.black.withValues(alpha: 0.4);
+      textColor = AppTheme.textPrimary;
+      iconColor = AppTheme.textPrimary.withValues(alpha: 0.9);
+      boxShadow = [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.2),
+          blurRadius: 8,
+          spreadRadius: 1,
+        ),
+      ];
     } else {
-      bgColor = AppTheme.bgTertiary;
+      bgColor = Colors.black.withValues(alpha: 0.3);
       textColor = AppTheme.textPrimary;
       iconColor = AppTheme.textSecondary;
+      boxShadow = null;
     }
 
     return GestureDetector(
@@ -411,9 +576,11 @@ class _PreviewPageState extends State<PreviewPage>
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          border: isDestructive
-              ? Border.all(color: AppTheme.error.withValues(alpha: 0.3))
-              : null,
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 1,
+          ),
+          boxShadow: boxShadow,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -425,7 +592,7 @@ class _PreviewPageState extends State<PreviewPage>
               style: TextStyle(
                 color: textColor,
                 fontSize: 14,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],

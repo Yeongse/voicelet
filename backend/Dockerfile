@@ -1,3 +1,6 @@
+# ============================================
+# Production image with tsx
+# ============================================
 FROM node:24-bullseye-slim
 
 WORKDIR /app
@@ -5,10 +8,14 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
+# tsx は devDependencies にあるため、全ての依存関係をインストール
 RUN npm ci && npx prisma generate
 
-COPY . .
+COPY src ./src
+COPY tsconfig.json ./
+
+ENV NODE_ENV=production
 
 EXPOSE 3002
 
-CMD ["npm", "run", "dev"]
+CMD ["npm", "start"]

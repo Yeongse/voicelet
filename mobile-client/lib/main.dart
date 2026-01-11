@@ -4,16 +4,25 @@ import 'l10n/generated/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/theme/app_theme.dart';
 import 'features/users/pages/user_list_page.dart';
 import 'features/users/pages/user_detail_page.dart';
+import 'features/recording/pages/recording_page.dart';
+import 'features/recording/pages/preview_page.dart';
+import 'features/splash/pages/splash_page.dart';
+import 'features/whisper/pages/whisper_list_page.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
 }
 
 final _router = GoRouter(
-  initialLocation: '/users',
+  initialLocation: '/',
   routes: [
+    GoRoute(
+      path: '/',
+      builder: (context, state) => const SplashPage(),
+    ),
     GoRoute(
       path: '/users',
       builder: (context, state) => const UserListPage(),
@@ -25,6 +34,25 @@ final _router = GoRouter(
         return UserDetailPage(userId: userId);
       },
     ),
+    GoRoute(
+      path: '/recording',
+      builder: (context, state) => const RecordingPage(),
+    ),
+    GoRoute(
+      path: '/recording/preview',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>;
+        return PreviewPage(
+          filePath: extra['filePath'] as String,
+          fileName: extra['fileName'] as String,
+          duration: extra['duration'] as Duration,
+        );
+      },
+    ),
+    GoRoute(
+      path: '/dev/whispers',
+      builder: (context, state) => const WhisperListPage(),
+    ),
   ],
 );
 
@@ -34,11 +62,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'Mobile Client',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
+      title: 'Voicelet',
+      theme: AppTheme.themeData,
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,

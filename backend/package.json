@@ -6,8 +6,7 @@
   "main": "src/main.ts",
   "scripts": {
     "dev": "tsx watch src/main.ts",
-    "build": "tsc",
-    "start": "node dist/main.js",
+    "start": "tsx src/main.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
@@ -21,6 +20,7 @@
     "@fastify/cors": "^11.2.0",
     "@fastify/swagger": "^9.6.1",
     "@fastify/swagger-ui": "^5.2.3",
+    "@google-cloud/storage": "^7.16.0",
     "@prisma/client": "^6.19.0",
     "dayjs": "^1.11.13",
     "fastify": "^5.6.2",

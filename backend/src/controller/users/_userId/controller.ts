@@ -1,5 +1,5 @@
-import { prisma } from "../../../database";
-import { type ServerInstance } from "../../../lib/fastify";
+import { prisma } from '../../../database'
+import { type ServerInstance } from '../../../lib/fastify'
 import {
   commandResponseSchema,
   errorResponseSchema,
@@ -8,14 +8,14 @@ import {
   updateUserParamsSchema,
   updateUserRequestSchema,
   deleteUserParamsSchema,
-} from "./schema";
+} from './schema'
 
 function formatUserResponse(user: {
-  id: string;
-  email: string;
-  name: string;
-  createdAt: Date;
-  updatedAt: Date;
+  id: string
+  email: string
+  name: string
+  createdAt: Date
+  updatedAt: Date
 }) {
   return {
     id: user.id,
@@ -23,17 +23,17 @@ function formatUserResponse(user: {
     name: user.name,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
-  };
+  }
 }
 
 export default async function (fastify: ServerInstance) {
   fastify.get(
-    "/",
+    '/',
     {
       schema: {
-        tags: ["User"],
-        summary: "ユーザー詳細取得",
-        description: "指定したIDのユーザー情報を取得します。",
+        tags: ['User'],
+        summary: 'ユーザー詳細取得',
+        description: '指定したIDのユーザー情報を取得します。',
         params: getUserParamsSchema,
         response: {
           200: getUserResponseSchema,
@@ -42,27 +42,27 @@ export default async function (fastify: ServerInstance) {
       },
     },
     async (request, reply) => {
-      const { userId } = request.params;
+      const { userId } = request.params
 
       const user = await prisma.user.findUnique({
         where: { id: userId },
-      });
+      })
 
       if (!user) {
-        return reply.status(404).send({ message: "ユーザーが見つかりません" });
+        return reply.status(404).send({ message: 'ユーザーが見つかりません' })
       }
 
-      return reply.send(formatUserResponse(user));
-    }
-  );
+      return reply.send(formatUserResponse(user))
+    },
+  )
 
   fastify.put(
-    "/",
+    '/',
     {
       schema: {
-        tags: ["User"],
-        summary: "ユーザー更新",
-        description: "指定したIDのユーザー情報を更新します。",
+        tags: ['User'],
+        summary: 'ユーザー更新',
+        description: '指定したIDのユーザー情報を更新します。',
         params: updateUserParamsSchema,
         body: updateUserRequestSchema,
         response: {
@@ -74,15 +74,15 @@ export default async function (fastify: ServerInstance) {
       },
     },
     async (request, reply) => {
-      const { userId } = request.params;
-      const { email, name } = request.body;
+      const { userId } = request.params
+      const { email, name } = request.body
 
       const existingUser = await prisma.user.findUnique({
         where: { id: userId },
-      });
+      })
 
       if (!existingUser) {
-        return reply.status(404).send({ message: "ユーザーが見つかりません" });
+        return reply.status(404).send({ message: 'ユーザーが見つかりません' })
       }
 
       if (email) {
@@ -91,12 +91,10 @@ export default async function (fastify: ServerInstance) {
             email,
             NOT: { id: userId },
           },
-        });
+        })
 
         if (duplicateEmail) {
-          return reply
-            .status(409)
-            .send({ message: "このメールアドレスは既に使用されています" });
+          return reply.status(409).send({ message: 'このメールアドレスは既に使用されています' })
         }
       }
 
@@ -106,19 +104,19 @@ export default async function (fastify: ServerInstance) {
           ...(email && { email }),
           ...(name && { name }),
         },
-      });
+      })
 
-      return reply.send({ message: "ユーザーを更新しました" });
-    }
-  );
+      return reply.send({ message: 'ユーザーを更新しました' })
+    },
+  )
 
   fastify.delete(
-    "/",
+    '/',
     {
       schema: {
-        tags: ["User"],
-        summary: "ユーザー削除",
-        description: "指定したIDのユーザーを削除します。",
+        tags: ['User'],
+        summary: 'ユーザー削除',
+        description: '指定したIDのユーザーを削除します。',
         params: deleteUserParamsSchema,
         response: {
           200: commandResponseSchema,
@@ -127,21 +125,21 @@ export default async function (fastify: ServerInstance) {
       },
     },
     async (request, reply) => {
-      const { userId } = request.params;
+      const { userId } = request.params
 
       const existingUser = await prisma.user.findUnique({
         where: { id: userId },
-      });
+      })
 
       if (!existingUser) {
-        return reply.status(404).send({ message: "ユーザーが見つかりません" });
+        return reply.status(404).send({ message: 'ユーザーが見つかりません' })
       }
 
       await prisma.user.delete({
         where: { id: userId },
-      });
+      })
 
-      return reply.send({ message: "ユーザーを削除しました" });
-    }
-  );
+      return reply.send({ message: 'ユーザーを削除しました' })
+    },
+  )
 }

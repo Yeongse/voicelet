@@ -1,5 +1,5 @@
-name: mobile_client
-description: "開発合宿用モバイルアプリテンプレート"
+name: voicelet
+description: "声で残す日記SNS"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -21,15 +21,33 @@ dependencies:
   json_annotation: ^4.8.1
   go_router: ^14.0.0
 
+  # Recording feature
+  record: ^6.0.0
+  audio_waveforms: ^1.3.0
+  path_provider: ^2.1.2
+  audioplayers: ^6.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  mocktail: ^1.0.4
   build_runner: ^2.4.8
   freezed: ^2.4.6
   json_serializable: ^6.7.1
   riverpod_generator: ^2.3.9
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/icon.png"
+  min_sdk_android: 21
+  remove_alpha_ios: true
 
 flutter:
   generate: true
   uses-material-design: true
+  assets:
+    - assets/icon.png
+    - assets/main_background.png

@@ -34,6 +34,11 @@ resource "google_cloud_run_v2_service" "this" {
         value = var.gcs_bucket_name
       }
 
+      env {
+        name  = "GCS_AVATAR_BUCKET_NAME"
+        value = var.gcs_avatar_bucket_name
+      }
+
       # ============================================
       # 手動設定が必要な環境変数（Secret Manager経由）
       # デプロイ前に gcloud secrets versions add で値を設定すること

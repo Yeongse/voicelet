@@ -1,8 +1,8 @@
 # Cloud Scheduler job for deleting expired posts
 resource "google_cloud_scheduler_job" "delete_expired_posts" {
   name        = "${var.service_name}-delete-expired-posts"
-  description = "Deletes expired posts every hour"
-  schedule    = "0 * * * *" # Every hour at minute 0
+  description = "Deletes expired posts once a day"
+  schedule    = "0 3 * * *" # Every day at 3:00 AM
   time_zone   = "Asia/Tokyo"
   region      = var.location
 

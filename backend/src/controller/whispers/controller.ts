@@ -105,12 +105,17 @@ export default async function (fastify: ServerInstance) {
 
       const bucketName = getBucketName()
 
+      // expiresAt = createdAt + 24時間
+      const now = new Date()
+      const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+
       const whisper = await prisma.whisper.create({
         data: {
           userId,
           bucketName,
           fileName,
           duration,
+          expiresAt,
         },
       })
 
@@ -123,6 +128,7 @@ export default async function (fastify: ServerInstance) {
           fileName: whisper.fileName,
           duration: whisper.duration,
           createdAt: whisper.createdAt.toISOString(),
+          expiresAt: whisper.expiresAt.toISOString(),
         },
       })
     },
@@ -169,6 +175,7 @@ export default async function (fastify: ServerInstance) {
         fileName: whisper.fileName,
         duration: whisper.duration,
         createdAt: whisper.createdAt.toISOString(),
+        expiresAt: whisper.expiresAt.toISOString(),
       }))
 
       const response = buildPaginationResponse({

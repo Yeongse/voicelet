@@ -258,6 +258,7 @@ mixin _$Whisper {
   String get fileName => throw _privateConstructorUsedError;
   int get duration => throw _privateConstructorUsedError;
   String get createdAt => throw _privateConstructorUsedError;
+  String get expiresAt => throw _privateConstructorUsedError;
 
   /// Serializes this Whisper to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -280,6 +281,7 @@ abstract class $WhisperCopyWith<$Res> {
     String fileName,
     int duration,
     String createdAt,
+    String expiresAt,
   });
 }
 
@@ -304,6 +306,7 @@ class _$WhisperCopyWithImpl<$Res, $Val extends Whisper>
     Object? fileName = null,
     Object? duration = null,
     Object? createdAt = null,
+    Object? expiresAt = null,
   }) {
     return _then(
       _value.copyWith(
@@ -331,6 +334,10 @@ class _$WhisperCopyWithImpl<$Res, $Val extends Whisper>
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
                       as String,
+            expiresAt: null == expiresAt
+                ? _value.expiresAt
+                : expiresAt // ignore: cast_nullable_to_non_nullable
+                      as String,
           )
           as $Val,
     );
@@ -352,6 +359,7 @@ abstract class _$$WhisperImplCopyWith<$Res> implements $WhisperCopyWith<$Res> {
     String fileName,
     int duration,
     String createdAt,
+    String expiresAt,
   });
 }
 
@@ -375,6 +383,7 @@ class __$$WhisperImplCopyWithImpl<$Res>
     Object? fileName = null,
     Object? duration = null,
     Object? createdAt = null,
+    Object? expiresAt = null,
   }) {
     return _then(
       _$WhisperImpl(
@@ -402,6 +411,10 @@ class __$$WhisperImplCopyWithImpl<$Res>
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
                   as String,
+        expiresAt: null == expiresAt
+            ? _value.expiresAt
+            : expiresAt // ignore: cast_nullable_to_non_nullable
+                  as String,
       ),
     );
   }
@@ -417,6 +430,7 @@ class _$WhisperImpl implements _Whisper {
     required this.fileName,
     required this.duration,
     required this.createdAt,
+    required this.expiresAt,
   });
 
   factory _$WhisperImpl.fromJson(Map<String, dynamic> json) =>
@@ -434,10 +448,12 @@ class _$WhisperImpl implements _Whisper {
   final int duration;
   @override
   final String createdAt;
+  @override
+  final String expiresAt;
 
   @override
   String toString() {
-    return 'Whisper(id: $id, userId: $userId, bucketName: $bucketName, fileName: $fileName, duration: $duration, createdAt: $createdAt)';
+    return 'Whisper(id: $id, userId: $userId, bucketName: $bucketName, fileName: $fileName, duration: $duration, createdAt: $createdAt, expiresAt: $expiresAt)';
   }
 
   @override
@@ -454,7 +470,9 @@ class _$WhisperImpl implements _Whisper {
             (identical(other.duration, duration) ||
                 other.duration == duration) &&
             (identical(other.createdAt, createdAt) ||
-                other.createdAt == createdAt));
+                other.createdAt == createdAt) &&
+            (identical(other.expiresAt, expiresAt) ||
+                other.expiresAt == expiresAt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -467,6 +485,7 @@ class _$WhisperImpl implements _Whisper {
     fileName,
     duration,
     createdAt,
+    expiresAt,
   );
 
   /// Create a copy of Whisper
@@ -491,6 +510,7 @@ abstract class _Whisper implements Whisper {
     required final String fileName,
     required final int duration,
     required final String createdAt,
+    required final String expiresAt,
   }) = _$WhisperImpl;
 
   factory _Whisper.fromJson(Map<String, dynamic> json) = _$WhisperImpl.fromJson;
@@ -507,6 +527,8 @@ abstract class _Whisper implements Whisper {
   int get duration;
   @override
   String get createdAt;
+  @override
+  String get expiresAt;
 
   /// Create a copy of Whisper
   /// with the given fields replaced by the non-null parameter values.

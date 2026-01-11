@@ -37,10 +37,12 @@ model Whisper {
   fileName   String   @map("file_name")
   duration   Int      // 秒数
   createdAt  DateTime @default(now()) @map("created_at")
+  expiresAt  DateTime @map("expires_at")
 
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([createdAt])
+  @@index([expiresAt])
   @@map("whispers")
 }

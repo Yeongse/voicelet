@@ -32,6 +32,7 @@ _$WhisperImpl _$$WhisperImplFromJson(Map<String, dynamic> json) =>
       fileName: json['fileName'] as String,
       duration: (json['duration'] as num).toInt(),
       createdAt: json['createdAt'] as String,
+      expiresAt: json['expiresAt'] as String,
     );
 
 Map<String, dynamic> _$$WhisperImplToJson(_$WhisperImpl instance) =>
@@ -42,6 +43,7 @@ Map<String, dynamic> _$$WhisperImplToJson(_$WhisperImpl instance) =>
       'fileName': instance.fileName,
       'duration': instance.duration,
       'createdAt': instance.createdAt,
+      'expiresAt': instance.expiresAt,
     };
 
 _$AudioUrlResponseImpl _$$AudioUrlResponseImplFromJson(

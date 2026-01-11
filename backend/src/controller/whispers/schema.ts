@@ -45,6 +45,7 @@ export const whisperResponseSchema = z.object({
   fileName: z.string(),
   duration: z.number(),
   createdAt: z.string(),
+  expiresAt: z.string(),
 })
 
 // ===========================================

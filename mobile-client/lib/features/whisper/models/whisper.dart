@@ -27,6 +27,7 @@ class Whisper with _$Whisper {
     required String fileName,
     required int duration,
     required String createdAt,
+    required String expiresAt,
   }) = _Whisper;
 
   factory Whisper.fromJson(Map<String, dynamic> json) =>

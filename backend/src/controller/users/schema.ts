@@ -7,7 +7,7 @@ export const errorResponseSchema = z.object({
 
 export const userResponseSchema = z.object({
   id: z.string(),
-  email: z.email(),
+  email: z.string().email(),
   name: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -30,7 +30,7 @@ export const commandResponseSchema = z.object({
 
 // POST /api/users
 export const createUserRequestSchema = z.object({
-  email: z.email(),
+  email: z.string().email(),
   name: z.string().min(1).max(100),
 })
 

@@ -11,7 +11,6 @@ export const storiesQuerySchema = z.object({
 
 export const storyItemSchema = z.object({
   id: z.string(),
-  visaudioUrlSchema: z.string(),
   duration: z.number(),
   createdAt: z.string(),
   isViewed: z.boolean(),

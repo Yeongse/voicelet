@@ -5,7 +5,7 @@ import { z } from 'zod'
  */
 export const userSchema = z.object({
   id: z.string(),
-  email: z.email(),
+  email: z.string().email(),
   name: z.string().min(1).max(100),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),

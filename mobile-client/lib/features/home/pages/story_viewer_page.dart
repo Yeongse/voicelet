@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,8 +23,12 @@ class StoryViewerPage extends ConsumerStatefulWidget {
 }
 
 class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AudioPlayer _audioPlayer;
+  late AnimationController _pulseController;
+  late AnimationController _waveController;
+  late Animation<double> _pulseAnimation;
+
   int _currentIndex = 0;
   bool _isPlaying = false;
   bool _isLoading = true;
@@ -38,6 +43,22 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
   void initState() {
     super.initState();
     _audioPlayer = AudioPlayer();
+
+    // パルスアニメーション（拡大縮小）
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    // 波形アニメーション
+    _waveController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
     _setupAudioListeners();
     _loadCurrentStory();
   }
@@ -59,6 +80,15 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
       setState(() {
         _isPlaying = state == PlayerState.playing;
       });
+
+      // アニメーション制御
+      if (state == PlayerState.playing) {
+        _pulseController.repeat(reverse: true);
+        _waveController.repeat();
+      } else {
+        _pulseController.stop();
+        _waveController.stop();
+      }
 
       // 再生完了時に次へ
       if (state == PlayerState.completed) {
@@ -134,14 +164,14 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
     _positionSubscription?.cancel();
     _playerStateSubscription?.cancel();
     _durationSubscription?.cancel();
+    _pulseController.dispose();
+    _waveController.dispose();
     _audioPlayer.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final currentStory = widget.story.stories[_currentIndex];
-
     return Scaffold(
       backgroundColor: AppTheme.bgPrimary,
       body: GestureDetector(
@@ -185,9 +215,6 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
                           : _buildAudioVisualizer(),
                     ),
                   ),
-
-                  // ボトム情報
-                  _buildBottomInfo(currentStory),
 
                   const SizedBox(height: 32),
                 ],
@@ -346,70 +373,104 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // プレイ/ポーズインジケーター
-        AnimatedContainer(
-          duration: AppTheme.durationNormal,
-          width: 120,
-          height: 120,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppTheme.bgElevated.withValues(alpha: 0.8),
-            boxShadow: _isPlaying ? AppTheme.glowAccent : [],
-          ),
-          child: Center(
-            child: Icon(
-              _isPlaying ? Icons.graphic_eq_rounded : Icons.play_arrow_rounded,
-              size: 64,
-              color: AppTheme.accentPrimary,
-            ),
-          ),
+        // アニメーション付きオーディオビジュアライザー
+        AnimatedBuilder(
+          animation: Listenable.merge([_pulseController, _waveController]),
+          builder: (context, child) {
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                // 外側のリング（パルス）
+                if (_isPlaying)
+                  Transform.scale(
+                    scale: 1.0 + (_pulseAnimation.value - 1.0) * 2,
+                    child: Container(
+                      width: 140,
+                      height: 140,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppTheme.accentPrimary.withValues(
+                            alpha: 0.3 * (1.0 - (_pulseAnimation.value - 1.0) * 5),
+                          ),
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                  ),
+                // メインの円
+                Transform.scale(
+                  scale: _isPlaying ? _pulseAnimation.value : 1.0,
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppTheme.bgElevated.withValues(alpha: 0.9),
+                      boxShadow: _isPlaying ? AppTheme.glowAccent : [],
+                    ),
+                    child: Center(
+                      child: _isPlaying
+                          ? _buildSoundBars()
+                          : Icon(
+                              Icons.play_arrow_rounded,
+                              size: 64,
+                              color: AppTheme.accentPrimary,
+                            ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
 
         const SizedBox(height: 32),
 
-        // 再生位置
+        // 再生時間表示
         Text(
           '${_formatDuration(_currentPosition)} / ${_formatDuration(_totalDuration)}',
           style: TextStyle(
             fontSize: 16,
             color: AppTheme.textSecondary,
-            fontFamily: 'JetBrains Mono',
+            fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildBottomInfo(StoryItem story) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.timer_outlined,
-            size: 16,
-            color: AppTheme.textTertiary,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '${story.duration}秒',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppTheme.textTertiary,
-            ),
-          ),
-          const SizedBox(width: 24),
-          Text(
-            '${_currentIndex + 1} / ${widget.story.stories.length}',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppTheme.textTertiary,
-            ),
-          ),
-        ],
-      ),
+  Widget _buildSoundBars() {
+    return AnimatedBuilder(
+      animation: _waveController,
+      builder: (context, child) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(5, (index) {
+            // 各バーに異なる位相のアニメーション
+            final phase = index * 0.2;
+            final animValue = ((_waveController.value + phase) % 1.0);
+            final height = 20 + 24 * math.sin(animValue * math.pi);
+
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: 6,
+              height: height,
+              decoration: BoxDecoration(
+                color: AppTheme.accentPrimary,
+                borderRadius: BorderRadius.circular(3),
+              ),
+            );
+          }),
+        );
+      },
     );
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
   String _formatTime(String isoString) {
@@ -426,11 +487,5 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
     } else {
       return '${diff.inDays}日前';
     }
-  }
-
-  String _formatDuration(Duration duration) {
-    final minutes = duration.inMinutes;
-    final seconds = duration.inSeconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 }

@@ -11,6 +11,9 @@ export const myProfileResponseSchema = z.object({
   birthMonth: z.string().nullable(),
   age: z.number().nullable(),
   avatarUrl: z.string().nullable(),
+  isPrivate: z.boolean(),
+  followingCount: z.number(),
+  followersCount: z.number(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -25,6 +28,11 @@ export const publicProfileResponseSchema = z.object({
   bio: z.string().nullable(),
   age: z.number().nullable(),
   avatarUrl: z.string().nullable(),
+  isPrivate: z.boolean(),
+  followingCount: z.number(),
+  followersCount: z.number(),
+  followStatus: z.enum(['none', 'following', 'requested']),
+  isOwnProfile: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -72,6 +80,7 @@ export const updateProfileRequestSchema = z.object({
     )
     .optional(),
   avatarPath: z.string().optional(),
+  isPrivate: z.boolean().optional(),
 })
 
 /**
@@ -81,9 +90,7 @@ export const avatarUploadRequestSchema = z.object({
   contentType: z.enum(['image/jpeg', 'image/png', 'image/webp'], {
     message: 'ファイル形式はJPEG、PNG、WebPのいずれかである必要があります',
   }),
-  fileSize: z
-    .number()
-    .max(5 * 1024 * 1024, 'ファイルサイズは5MB以下である必要があります'),
+  fileSize: z.number().max(5 * 1024 * 1024, 'ファイルサイズは5MB以下である必要があります'),
   fileName: z
     .string()
     .regex(/^[a-f0-9-]+_\d+$/, 'ファイル名はuuid_timestampの形式で指定してください'),

@@ -1,5 +1,5 @@
+import { PrismaClient, type User } from '@prisma/client'
 import { config } from 'dotenv'
-import { PrismaClient, User } from '@prisma/client'
 
 // .envファイルを読み込み
 config()

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { prisma } from '../../database'
-import { type ServerInstance } from '../../lib/fastify'
+import type { ServerInstance } from '../../lib/fastify'
 import { discoverQuerySchema, discoverResponseSchema, errorResponseSchema } from './schema'
 
 export default async function (fastify: ServerInstance) {
@@ -20,7 +20,11 @@ export default async function (fastify: ServerInstance) {
       },
     },
     async (request, reply) => {
-      const { userId, page, limit } = request.query as { userId: string; page: number; limit: number }
+      const { userId, page, limit } = request.query as {
+        userId: string
+        page: number
+        limit: number
+      }
 
       const user = await prisma.user.findUnique({ where: { id: userId } })
       if (!user) {

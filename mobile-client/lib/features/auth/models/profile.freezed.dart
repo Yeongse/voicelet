@@ -28,6 +28,11 @@ mixin _$Profile {
   String? get birthMonth => throw _privateConstructorUsedError;
   int? get age => throw _privateConstructorUsedError;
   String? get avatarUrl => throw _privateConstructorUsedError;
+  bool get isPrivate => throw _privateConstructorUsedError;
+  int get followingCount => throw _privateConstructorUsedError;
+  int get followersCount => throw _privateConstructorUsedError;
+  String get followStatus => throw _privateConstructorUsedError;
+  bool get isOwnProfile => throw _privateConstructorUsedError;
   String get createdAt => throw _privateConstructorUsedError;
   String get updatedAt => throw _privateConstructorUsedError;
 
@@ -53,6 +58,11 @@ abstract class $ProfileCopyWith<$Res> {
     String? birthMonth,
     int? age,
     String? avatarUrl,
+    bool isPrivate,
+    int followingCount,
+    int followersCount,
+    String followStatus,
+    bool isOwnProfile,
     String createdAt,
     String updatedAt,
   });
@@ -80,6 +90,11 @@ class _$ProfileCopyWithImpl<$Res, $Val extends Profile>
     Object? birthMonth = freezed,
     Object? age = freezed,
     Object? avatarUrl = freezed,
+    Object? isPrivate = null,
+    Object? followingCount = null,
+    Object? followersCount = null,
+    Object? followStatus = null,
+    Object? isOwnProfile = null,
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
@@ -113,6 +128,26 @@ class _$ProfileCopyWithImpl<$Res, $Val extends Profile>
                 ? _value.avatarUrl
                 : avatarUrl // ignore: cast_nullable_to_non_nullable
                       as String?,
+            isPrivate: null == isPrivate
+                ? _value.isPrivate
+                : isPrivate // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            followingCount: null == followingCount
+                ? _value.followingCount
+                : followingCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+            followersCount: null == followersCount
+                ? _value.followersCount
+                : followersCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+            followStatus: null == followStatus
+                ? _value.followStatus
+                : followStatus // ignore: cast_nullable_to_non_nullable
+                      as String,
+            isOwnProfile: null == isOwnProfile
+                ? _value.isOwnProfile
+                : isOwnProfile // ignore: cast_nullable_to_non_nullable
+                      as bool,
             createdAt: null == createdAt
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
@@ -143,6 +178,11 @@ abstract class _$$ProfileImplCopyWith<$Res> implements $ProfileCopyWith<$Res> {
     String? birthMonth,
     int? age,
     String? avatarUrl,
+    bool isPrivate,
+    int followingCount,
+    int followersCount,
+    String followStatus,
+    bool isOwnProfile,
     String createdAt,
     String updatedAt,
   });
@@ -169,6 +209,11 @@ class __$$ProfileImplCopyWithImpl<$Res>
     Object? birthMonth = freezed,
     Object? age = freezed,
     Object? avatarUrl = freezed,
+    Object? isPrivate = null,
+    Object? followingCount = null,
+    Object? followersCount = null,
+    Object? followStatus = null,
+    Object? isOwnProfile = null,
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
@@ -202,6 +247,26 @@ class __$$ProfileImplCopyWithImpl<$Res>
             ? _value.avatarUrl
             : avatarUrl // ignore: cast_nullable_to_non_nullable
                   as String?,
+        isPrivate: null == isPrivate
+            ? _value.isPrivate
+            : isPrivate // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        followingCount: null == followingCount
+            ? _value.followingCount
+            : followingCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+        followersCount: null == followersCount
+            ? _value.followersCount
+            : followersCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+        followStatus: null == followStatus
+            ? _value.followStatus
+            : followStatus // ignore: cast_nullable_to_non_nullable
+                  as String,
+        isOwnProfile: null == isOwnProfile
+            ? _value.isOwnProfile
+            : isOwnProfile // ignore: cast_nullable_to_non_nullable
+                  as bool,
         createdAt: null == createdAt
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
@@ -226,6 +291,11 @@ class _$ProfileImpl implements _Profile {
     this.birthMonth,
     this.age,
     this.avatarUrl,
+    this.isPrivate = false,
+    this.followingCount = 0,
+    this.followersCount = 0,
+    this.followStatus = 'none',
+    this.isOwnProfile = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -248,13 +318,28 @@ class _$ProfileImpl implements _Profile {
   @override
   final String? avatarUrl;
   @override
+  @JsonKey()
+  final bool isPrivate;
+  @override
+  @JsonKey()
+  final int followingCount;
+  @override
+  @JsonKey()
+  final int followersCount;
+  @override
+  @JsonKey()
+  final String followStatus;
+  @override
+  @JsonKey()
+  final bool isOwnProfile;
+  @override
   final String createdAt;
   @override
   final String updatedAt;
 
   @override
   String toString() {
-    return 'Profile(id: $id, email: $email, name: $name, bio: $bio, birthMonth: $birthMonth, age: $age, avatarUrl: $avatarUrl, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Profile(id: $id, email: $email, name: $name, bio: $bio, birthMonth: $birthMonth, age: $age, avatarUrl: $avatarUrl, isPrivate: $isPrivate, followingCount: $followingCount, followersCount: $followersCount, followStatus: $followStatus, isOwnProfile: $isOwnProfile, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -271,6 +356,16 @@ class _$ProfileImpl implements _Profile {
             (identical(other.age, age) || other.age == age) &&
             (identical(other.avatarUrl, avatarUrl) ||
                 other.avatarUrl == avatarUrl) &&
+            (identical(other.isPrivate, isPrivate) ||
+                other.isPrivate == isPrivate) &&
+            (identical(other.followingCount, followingCount) ||
+                other.followingCount == followingCount) &&
+            (identical(other.followersCount, followersCount) ||
+                other.followersCount == followersCount) &&
+            (identical(other.followStatus, followStatus) ||
+                other.followStatus == followStatus) &&
+            (identical(other.isOwnProfile, isOwnProfile) ||
+                other.isOwnProfile == isOwnProfile) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
@@ -288,6 +383,11 @@ class _$ProfileImpl implements _Profile {
     birthMonth,
     age,
     avatarUrl,
+    isPrivate,
+    followingCount,
+    followersCount,
+    followStatus,
+    isOwnProfile,
     createdAt,
     updatedAt,
   );
@@ -315,6 +415,11 @@ abstract class _Profile implements Profile {
     final String? birthMonth,
     final int? age,
     final String? avatarUrl,
+    final bool isPrivate,
+    final int followingCount,
+    final int followersCount,
+    final String followStatus,
+    final bool isOwnProfile,
     required final String createdAt,
     required final String updatedAt,
   }) = _$ProfileImpl;
@@ -335,6 +440,16 @@ abstract class _Profile implements Profile {
   int? get age;
   @override
   String? get avatarUrl;
+  @override
+  bool get isPrivate;
+  @override
+  int get followingCount;
+  @override
+  int get followersCount;
+  @override
+  String get followStatus;
+  @override
+  bool get isOwnProfile;
   @override
   String get createdAt;
   @override

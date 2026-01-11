@@ -59,6 +59,7 @@ class ProfileUpdateNotifier extends StateNotifier<ProfileUpdateState> {
     String? name,
     String? bio,
     String? birthMonth,
+    bool? isPrivate,
   }) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
@@ -67,6 +68,7 @@ class ProfileUpdateNotifier extends StateNotifier<ProfileUpdateState> {
         name: name,
         bio: bio,
         birthMonth: birthMonth,
+        isPrivate: isPrivate,
       );
 
       state = state.copyWith(isLoading: false, profile: profile);
@@ -154,6 +156,24 @@ class ProfileUpdateNotifier extends StateNotifier<ProfileUpdateState> {
 
       // サインアウト
       await _ref.read(authProvider.notifier).signOut();
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  /// 非公開設定を更新
+  Future<bool> updatePrivacy(bool isPrivate) async {
+    try {
+      state = state.copyWith(isLoading: true, error: null);
+
+      final profile = await _service.updateProfile(isPrivate: isPrivate);
+
+      state = state.copyWith(isLoading: false, profile: profile);
+      _ref.invalidate(myProfileProvider);
+      // authProviderのプロフィールも更新
+      _ref.read(authProvider.notifier).updateProfile(profile);
       return true;
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());

@@ -14,6 +14,21 @@ export const userResponseSchema = z.object({
 
 export type UserResponse = z.infer<typeof userResponseSchema>
 
+// 公開プロフィール用レスポンス（フォロー状態含む）
+export const userProfileResponseSchema = z.object({
+  id: z.string(),
+  name: z.string().nullable(),
+  bio: z.string().nullable(),
+  avatarUrl: z.string().nullable(),
+  isPrivate: z.boolean(),
+  followersCount: z.number(),
+  followingCount: z.number(),
+  followStatus: z.enum(['none', 'following', 'requested']),
+  isOwnProfile: z.boolean(),
+})
+
+export type UserProfileResponse = z.infer<typeof userProfileResponseSchema>
+
 // GET /api/users/:userId
 export const getUserParamsSchema = z.object({
   userId: z.string(),

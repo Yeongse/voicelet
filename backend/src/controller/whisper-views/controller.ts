@@ -1,6 +1,6 @@
 import { prisma } from '../../database'
-import { type ServerInstance } from '../../lib/fastify'
-import { viewBodySchema, viewResponseSchema, errorResponseSchema } from './schema'
+import type { ServerInstance } from '../../lib/fastify'
+import { errorResponseSchema, viewBodySchema, viewResponseSchema } from './schema'
 
 export default async function (fastify: ServerInstance) {
   // POST /api/whisper-views - 視聴履歴記録

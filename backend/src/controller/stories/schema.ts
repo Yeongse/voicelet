@@ -22,12 +22,14 @@ export const userStorySchema = z.object({
     name: z.string(),
     avatarUrl: z.string().nullable(),
   }),
-  stories: z.array(z.object({
-    id: z.string(),
-    duration: z.number(),
-    createdAt: z.string(),
-    isViewed: z.boolean(),
-  })),
+  stories: z.array(
+    z.object({
+      id: z.string(),
+      duration: z.number(),
+      createdAt: z.string(),
+      isViewed: z.boolean(),
+    }),
+  ),
   hasUnviewed: z.boolean(),
 })
 

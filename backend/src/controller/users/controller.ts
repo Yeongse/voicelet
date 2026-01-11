@@ -1,5 +1,5 @@
 import { prisma } from '../../database'
-import { type ServerInstance } from '../../lib/fastify'
+import type { ServerInstance } from '../../lib/fastify'
 import { buildPaginationResponse, calculatePagination } from '../../lib/pagination'
 import {
   commandResponseSchema,

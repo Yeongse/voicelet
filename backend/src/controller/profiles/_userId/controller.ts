@@ -1,5 +1,7 @@
 import { prisma } from '../../../database'
 import { calculateAge } from '../../../lib/age'
+import type { AuthenticatedRequest } from '../../../lib/auth'
+import { optionalAuthenticate } from '../../../lib/auth'
 import type { ServerInstance } from '../../../lib/fastify'
 import { generateAvatarDownloadSignedUrl } from '../../../services/storage'
 import { errorResponseSchema, publicProfileResponseSchema } from '../schema'
@@ -13,6 +15,7 @@ export default async function (fastify: ServerInstance) {
   fastify.get(
     '/',
     {
+      preHandler: [optionalAuthenticate],
       schema: {
         tags: ['Profile'],
         summary: '他ユーザーのプロフィール取得',
@@ -26,9 +29,18 @@ export default async function (fastify: ServerInstance) {
     },
     async (request, reply) => {
       const { userId } = request.params
+      const currentUserId = (request as AuthenticatedRequest).user?.sub
 
       const user = await prisma.user.findUnique({
         where: { id: userId },
+        include: {
+          _count: {
+            select: {
+              followers: true,
+              following: true,
+            },
+          },
+        },
       })
 
       if (!user) {
@@ -45,6 +57,40 @@ export default async function (fastify: ServerInstance) {
         }
       }
 
+      // フォロー状態を判定
+      let followStatus: 'none' | 'following' | 'requested' = 'none'
+      const isOwnProfile = currentUserId === userId
+
+      if (currentUserId && !isOwnProfile) {
+        // フォロー中かチェック
+        const existingFollow = await prisma.follow.findUnique({
+          where: {
+            followerId_followingId: {
+              followerId: currentUserId,
+              followingId: userId,
+            },
+          },
+        })
+
+        if (existingFollow) {
+          followStatus = 'following'
+        } else {
+          // リクエスト中かチェック
+          const existingRequest = await prisma.followRequest.findUnique({
+            where: {
+              requesterId_targetId: {
+                requesterId: currentUserId,
+                targetId: userId,
+              },
+            },
+          })
+
+          if (existingRequest) {
+            followStatus = 'requested'
+          }
+        }
+      }
+
       // 公開プロフィールはbirthMonthを含めない（ageのみ）
       return reply.send({
         id: user.id,
@@ -53,6 +99,11 @@ export default async function (fastify: ServerInstance) {
         bio: user.bio,
         age: calculateAge(user.birthMonth),
         avatarUrl,
+        isPrivate: user.isPrivate,
+        followersCount: user._count.followers,
+        followingCount: user._count.following,
+        followStatus,
+        isOwnProfile,
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
       })

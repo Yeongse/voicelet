@@ -7,9 +7,9 @@ import fastifySwagger from '@fastify/swagger'
 import fastifySwaggerUi from '@fastify/swagger-ui'
 import Fastify from 'fastify'
 import {
+  jsonSchemaTransform,
   serializerCompiler,
   validatorCompiler,
-  jsonSchemaTransform,
 } from 'fastify-type-provider-zod'
 import { registerJwtAuth } from './lib/auth'
 

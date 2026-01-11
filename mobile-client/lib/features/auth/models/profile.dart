@@ -13,6 +13,11 @@ class Profile with _$Profile {
     String? birthMonth,
     int? age,
     String? avatarUrl,
+    @Default(false) bool isPrivate,
+    @Default(0) int followingCount,
+    @Default(0) int followersCount,
+    @Default('none') String followStatus,
+    @Default(false) bool isOwnProfile,
     required String createdAt,
     required String updatedAt,
   }) = _Profile;

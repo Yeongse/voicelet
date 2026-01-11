@@ -21,13 +21,16 @@ model User {
   bio        String?   @db.VarChar(500)
   birthMonth String?   @map("birth_month") @db.Char(7)  // YYYY-MM
   avatarPath String?   @map("avatar_path")
+  isPrivate  Boolean   @default(false) @map("is_private")
   createdAt  DateTime  @default(now()) @map("created_at")
   updatedAt  DateTime  @updatedAt @map("updated_at")
 
-  whispers   Whisper[]
-  followers  Follow[]  @relation("following")
-  following  Follow[]  @relation("follower")
-  views      WhisperView[]
+  whispers          Whisper[]
+  followers         Follow[]         @relation("following")
+  following         Follow[]         @relation("follower")
+  views             WhisperView[]
+  sentRequests      FollowRequest[]  @relation("requester")
+  receivedRequests  FollowRequest[]  @relation("target")
 
   @@map("users")
 }
@@ -90,4 +93,23 @@ model WhisperView {
   @@index([userId])
   @@index([whisperId])
   @@map("whisper_views")
+}
+
+// ===========================================
+// FollowRequest Model (フォローリクエスト)
+// ===========================================
+
+model FollowRequest {
+  id          String   @id @default(uuid())
+  requesterId String   @map("requester_id")
+  targetId    String   @map("target_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  requester   User     @relation("requester", fields: [requesterId], references: [id], onDelete: Cascade)
+  target      User     @relation("target", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, targetId])
+  @@index([requesterId])
+  @@index([targetId])
+  @@map("follow_requests")
 }

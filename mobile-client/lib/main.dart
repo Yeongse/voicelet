@@ -22,6 +22,7 @@ import 'features/auth/pages/signup_page.dart';
 import 'features/auth/pages/onboarding_page.dart';
 import 'features/profile/pages/profile_page.dart';
 import 'features/profile/pages/profile_edit_page.dart';
+import 'features/follow/pages/follow_requests_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -110,6 +111,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/profile/edit',
       builder: (context, state) => const ProfileEditPage(),
+    ),
+    GoRoute(
+      path: '/follow-requests',
+      builder: (context, state) => const FollowRequestsPage(),
     ),
   ],
 );

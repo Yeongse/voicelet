@@ -42,12 +42,14 @@ class ProfileApiService {
     String? bio,
     String? birthMonth,
     String? avatarPath,
+    bool? isPrivate,
   }) async {
     final data = <String, dynamic>{};
     if (name != null) data['name'] = name;
     if (bio != null) data['bio'] = bio;
     if (birthMonth != null) data['birthMonth'] = birthMonth;
     if (avatarPath != null) data['avatarPath'] = avatarPath;
+    if (isPrivate != null) data['isPrivate'] = isPrivate;
 
     final response = await _dio.patch('/api/profiles/me', data: data);
     return Profile.fromJson(response.data as Map<String, dynamic>);

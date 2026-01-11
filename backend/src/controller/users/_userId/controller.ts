@@ -1,13 +1,13 @@
 import { prisma } from '../../../database'
-import { type ServerInstance } from '../../../lib/fastify'
+import type { ServerInstance } from '../../../lib/fastify'
 import {
   commandResponseSchema,
+  deleteUserParamsSchema,
   errorResponseSchema,
   getUserParamsSchema,
   getUserResponseSchema,
   updateUserParamsSchema,
   updateUserRequestSchema,
-  deleteUserParamsSchema,
 } from './schema'
 
 function formatUserResponse(user: {

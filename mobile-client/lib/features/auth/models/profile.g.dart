@@ -15,6 +15,11 @@ _$ProfileImpl _$$ProfileImplFromJson(Map<String, dynamic> json) =>
       birthMonth: json['birthMonth'] as String?,
       age: (json['age'] as num?)?.toInt(),
       avatarUrl: json['avatarUrl'] as String?,
+      isPrivate: json['isPrivate'] as bool? ?? false,
+      followingCount: (json['followingCount'] as num?)?.toInt() ?? 0,
+      followersCount: (json['followersCount'] as num?)?.toInt() ?? 0,
+      followStatus: json['followStatus'] as String? ?? 'none',
+      isOwnProfile: json['isOwnProfile'] as bool? ?? false,
       createdAt: json['createdAt'] as String,
       updatedAt: json['updatedAt'] as String,
     );
@@ -28,6 +33,11 @@ Map<String, dynamic> _$$ProfileImplToJson(_$ProfileImpl instance) =>
       'birthMonth': instance.birthMonth,
       'age': instance.age,
       'avatarUrl': instance.avatarUrl,
+      'isPrivate': instance.isPrivate,
+      'followingCount': instance.followingCount,
+      'followersCount': instance.followersCount,
+      'followStatus': instance.followStatus,
+      'isOwnProfile': instance.isOwnProfile,
       'createdAt': instance.createdAt,
       'updatedAt': instance.updatedAt,
     };

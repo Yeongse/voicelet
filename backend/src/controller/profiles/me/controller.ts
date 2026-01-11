@@ -66,10 +66,7 @@ export default async function (fastify: ServerInstance) {
         try {
           avatarUrl = await generateAvatarDownloadSignedUrl(user.avatarPath, 60)
         } catch (err) {
-          fastify.log.warn(
-            { err, avatarPath: user.avatarPath },
-            'Failed to generate avatar URL',
-          )
+          fastify.log.warn({ err, avatarPath: user.avatarPath }, 'Failed to generate avatar URL')
         }
       }
 
@@ -81,6 +78,9 @@ export default async function (fastify: ServerInstance) {
         birthMonth: user.birthMonth,
         age: calculateAge(user.birthMonth),
         avatarUrl,
+        isPrivate: user.isPrivate,
+        followingCount: 0,
+        followersCount: 0,
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
       })
@@ -110,6 +110,14 @@ export default async function (fastify: ServerInstance) {
 
       const user = await prisma.user.findUnique({
         where: { id: userId },
+        include: {
+          _count: {
+            select: {
+              following: true,
+              followers: true,
+            },
+          },
+        },
       })
 
       if (!user) {
@@ -135,6 +143,9 @@ export default async function (fastify: ServerInstance) {
         birthMonth: user.birthMonth,
         age: calculateAge(user.birthMonth),
         avatarUrl,
+        isPrivate: user.isPrivate,
+        followingCount: user._count.following,
+        followersCount: user._count.followers,
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
       })
@@ -163,7 +174,7 @@ export default async function (fastify: ServerInstance) {
     },
     async (request, reply) => {
       const userId = request.user.sub
-      const { name, bio, birthMonth, avatarPath } = request.body
+      const { name, bio, birthMonth, avatarPath, isPrivate } = request.body
 
       const user = await prisma.user.update({
         where: { id: userId },
@@ -172,6 +183,15 @@ export default async function (fastify: ServerInstance) {
           ...(bio !== undefined && { bio }),
           ...(birthMonth !== undefined && { birthMonth }),
           ...(avatarPath !== undefined && { avatarPath }),
+          ...(isPrivate !== undefined && { isPrivate }),
+        },
+        include: {
+          _count: {
+            select: {
+              following: true,
+              followers: true,
+            },
+          },
         },
       })
 
@@ -193,6 +213,9 @@ export default async function (fastify: ServerInstance) {
         birthMonth: user.birthMonth,
         age: calculateAge(user.birthMonth),
         avatarUrl,
+        isPrivate: user.isPrivate,
+        followingCount: user._count.following,
+        followersCount: user._count.followers,
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
       })

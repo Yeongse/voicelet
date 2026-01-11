@@ -1,6 +1,6 @@
 import { prisma } from '../../database'
-import { type ServerInstance } from '../../lib/fastify'
-import { storiesQuerySchema, storiesResponseSchema, errorResponseSchema } from './schema'
+import type { ServerInstance } from '../../lib/fastify'
+import { errorResponseSchema, storiesQuerySchema, storiesResponseSchema } from './schema'
 
 export default async function (fastify: ServerInstance) {
   // GET /api/stories - フォロー中ユーザーのストーリー取得
@@ -55,12 +55,15 @@ export default async function (fastify: ServerInstance) {
       })
 
       // ユーザーごとにグループ化
-      const userStoriesMap = new Map<string, {
-        user: { id: string; name: string; avatarUrl: string | null }
-        stories: Array<{ id: string; duration: number; createdAt: string; isViewed: boolean }>
-        hasUnviewed: boolean
-        latestCreatedAt: Date
-      }>()
+      const userStoriesMap = new Map<
+        string,
+        {
+          user: { id: string; name: string; avatarUrl: string | null }
+          stories: Array<{ id: string; duration: number; createdAt: string; isViewed: boolean }>
+          hasUnviewed: boolean
+          latestCreatedAt: Date
+        }
+      >()
 
       for (const whisper of whispers) {
         const isViewed = whisper.views.length > 0
@@ -94,8 +97,8 @@ export default async function (fastify: ServerInstance) {
 
       // 各ユーザーのストーリーを古い順にソート
       for (const userStory of userStoriesMap.values()) {
-        userStory.stories.sort((a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        userStory.stories.sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
         )
       }
 

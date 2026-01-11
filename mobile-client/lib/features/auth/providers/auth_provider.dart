@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/api/api_client.dart';
 import '../models/profile.dart';
 import '../../splash/providers/splash_init_provider.dart';
+import '../../profile/providers/profile_provider.dart';
 
 /// 認証状態
 sealed class AuthState {
@@ -280,6 +281,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
       await _supabase.auth.signOut();
       state = const AuthStateUnauthenticated();
+      // プロフィールキャッシュをクリア
+      _ref.invalidate(myProfileProvider);
       // スプラッシュプロバイダーを無効化して再初期化を強制
       _ref.invalidate(splashInitProvider);
     } catch (e) {

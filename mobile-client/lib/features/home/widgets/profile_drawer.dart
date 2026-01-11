@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/models/profile.dart';
+import '../../follow/providers/follow_provider.dart';
 
 /// プロフィールドロワー（右からスライドで表示）
 class ProfileDrawer extends ConsumerWidget {
@@ -178,6 +179,12 @@ class ProfileDrawer extends ConsumerWidget {
             context.push('/profile/edit');
           },
         ),
+        _FollowRequestMenuTile(
+          onTap: () {
+            Navigator.of(context).pop();
+            context.push('/follow-requests');
+          },
+        ),
         const SizedBox(height: 16),
         Divider(
           color: AppTheme.textTertiary.withValues(alpha: 0.2),
@@ -249,10 +256,8 @@ class ProfileDrawer extends ConsumerWidget {
 
                 if (confirm == true && context.mounted) {
                   Navigator.of(context).pop();
-                  await ref.read(authProvider.notifier).signOut();
-                  if (context.mounted) {
-                    context.go('/');
-                  }
+                  context.go('/');
+                  ref.read(authProvider.notifier).signOut();
                 }
               },
               icon: Icon(
@@ -280,6 +285,73 @@ class ProfileDrawer extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// フォローリクエストメニュータイル（バッジ付き）
+class _FollowRequestMenuTile extends ConsumerWidget {
+  final VoidCallback onTap;
+
+  const _FollowRequestMenuTile({required this.onTap});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final countAsync = ref.watch(followRequestCountProvider);
+    final count = countAsync.valueOrNull ?? 0;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Icon(
+                Icons.person_add_outlined,
+                color: AppTheme.textSecondary,
+                size: 22,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  'フォローリクエスト',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ),
+              if (count > 0) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentPrimary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    count > 99 ? '99+' : count.toString(),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              Icon(
+                Icons.chevron_right_rounded,
+                color: AppTheme.textTertiary,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

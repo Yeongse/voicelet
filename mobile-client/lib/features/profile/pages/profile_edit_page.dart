@@ -20,6 +20,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
 
   int? _selectedYear;
   int? _selectedMonth;
+  bool _isPrivate = false;
 
   final _imagePicker = ImagePicker();
 
@@ -43,6 +44,10 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
         });
       }
     }
+
+    setState(() {
+      _isPrivate = profileAsync.isPrivate;
+    });
   }
 
   @override
@@ -85,6 +90,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
       name: _nameController.text.trim(),
       bio: _bioController.text.trim(),
       birthMonth: birthMonth,
+      isPrivate: _isPrivate,
     );
 
     if (success && mounted) {
@@ -95,49 +101,6 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
         ),
       );
       context.pop();
-    }
-  }
-
-  Future<void> _deleteAccount() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.bgSecondary,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Text(
-          'アカウント削除',
-          style: TextStyle(color: AppTheme.textPrimary),
-        ),
-        content: Text(
-          'アカウントを削除すると、すべてのデータが失われます。この操作は取り消せません。\n\n本当に削除しますか？',
-          style: TextStyle(color: AppTheme.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'キャンセル',
-              style: TextStyle(color: AppTheme.textSecondary),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              '削除する',
-              style: TextStyle(color: AppTheme.error),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      final success = await ref.read(profileUpdateProvider.notifier).deleteAccount();
-      if (success && mounted) {
-        context.go('/');
-      }
     }
   }
 
@@ -387,6 +350,56 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                     color: AppTheme.textSecondary,
                   ),
                 ),
+                const SizedBox(height: 24),
+
+                // 非公開設定
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.bgSecondary,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppTheme.textTertiary.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.lock_outline, color: AppTheme.textSecondary),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '非公開アカウント',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'オンにすると、フォローリクエストを承認したユーザーのみがフォローできます',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: _isPrivate,
+                        onChanged: (value) {
+                          setState(() => _isPrivate = value);
+                        },
+                        activeTrackColor: AppTheme.accentPrimary.withValues(alpha: 0.5),
+                        activeThumbColor: AppTheme.accentPrimary,
+                      ),
+                    ],
+                  ),
+                ),
 
                 // エラーメッセージ
                 if (updateState.error != null) ...[
@@ -407,19 +420,6 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                   ),
                 ],
 
-                // アカウント削除
-                const SizedBox(height: 48),
-                Divider(color: AppTheme.textTertiary.withValues(alpha: 0.2)),
-                const SizedBox(height: 16),
-                Center(
-                  child: TextButton(
-                    onPressed: _deleteAccount,
-                    child: Text(
-                      'アカウントを削除',
-                      style: TextStyle(color: AppTheme.error),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),

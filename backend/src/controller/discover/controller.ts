@@ -66,8 +66,8 @@ export default async function (fastify: ServerInstance) {
 
       const data = paginatedUsers.map((u) => ({
         id: u.id,
-        name: u.name,
-        avatarUrl: u.avatarUrl,
+        name: u.name ?? '',
+        avatarUrl: u.avatarPath,
         whisperCount: u._count.whispers,
         latestWhisperAt: u.whispers[0]?.createdAt.toISOString() || '',
       }))
@@ -108,7 +108,7 @@ export default async function (fastify: ServerInstance) {
           expiresAt: { gt: now },
         },
         include: {
-          user: { select: { id: true, name: true, avatarUrl: true } },
+          user: { select: { id: true, name: true, avatarPath: true } },
           views: { where: { userId }, select: { id: true } },
         },
         orderBy: { createdAt: 'asc' },
@@ -118,7 +118,12 @@ export default async function (fastify: ServerInstance) {
         return reply.send({ user: null, stories: [] })
       }
 
-      const user = whispers[0].user
+      const firstUser = whispers[0].user
+      const user = {
+        id: firstUser.id,
+        name: firstUser.name ?? '',
+        avatarUrl: firstUser.avatarPath,
+      }
       const stories = whispers.map((w) => ({
         id: w.id,
         duration: w.duration,

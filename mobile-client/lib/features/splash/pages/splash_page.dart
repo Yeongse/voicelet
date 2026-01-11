@@ -10,7 +10,7 @@ import '../models/splash_result.dart';
 /// スプラッシュ画面
 ///
 /// アプリ起動時に「夜のささやき」テーマのブランディング要素を表示し、
-/// データロード完了後にホーム画面へ遷移する。
+/// 認証済みならホームへ、未認証ならSign In/Sign Upボタンを表示する。
 class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
 
@@ -22,14 +22,18 @@ class _SplashPageState extends ConsumerState<SplashPage>
     with TickerProviderStateMixin {
   late final AnimationController _mainController;
   late final AnimationController _glowController;
+  late final AnimationController _buttonsController;
 
   late final Animation<double> _logoScale;
   late final Animation<double> _logoOpacity;
   late final Animation<double> _titleOpacity;
   late final Animation<double> _taglineOpacity;
   late final Animation<Offset> _titleSlide;
+  late final Animation<double> _buttonsOpacity;
+  late final Animation<Offset> _buttonsSlide;
 
   bool _isTransitioning = false;
+  bool _showAuthButtons = false;
 
   @override
   void initState() {
@@ -46,6 +50,12 @@ class _SplashPageState extends ConsumerState<SplashPage>
       duration: const Duration(milliseconds: 3500),
       vsync: this,
     )..repeat(reverse: true);
+
+    // 認証ボタン用コントローラー
+    _buttonsController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
 
     // ロゴのスケールアニメーション（ゆっくり浮かび上がる）
     _logoScale = Tween<double>(begin: 0.7, end: 1.0).animate(
@@ -90,6 +100,24 @@ class _SplashPageState extends ConsumerState<SplashPage>
       ),
     );
 
+    // 認証ボタンのアニメーション
+    _buttonsOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _buttonsController,
+        curve: Curves.easeOut,
+      ),
+    );
+
+    _buttonsSlide = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _buttonsController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+
     _mainController.forward();
   }
 
@@ -97,25 +125,44 @@ class _SplashPageState extends ConsumerState<SplashPage>
   void dispose() {
     _mainController.dispose();
     _glowController.dispose();
+    _buttonsController.dispose();
     super.dispose();
   }
 
-  void _navigateToHome() {
+  void _navigateTo(String path) {
     if (_isTransitioning) return;
     setState(() => _isTransitioning = true);
 
     _mainController.reverse().then((_) {
       if (mounted) {
-        context.go('/home');
+        context.go(path);
       }
     });
+  }
+
+  void _showButtons() {
+    setState(() => _showAuthButtons = true);
+    _buttonsController.forward();
   }
 
   @override
   Widget build(BuildContext context) {
     ref.listen<AsyncValue<SplashResult>>(splashInitProvider, (previous, next) {
       next.whenData((result) {
-        _navigateToHome();
+        switch (result) {
+          case SplashSuccess():
+            _navigateTo('/home');
+          case SplashNeedsOnboarding():
+            // 認証済みだがプロフィール未登録
+            _navigateTo('/auth/onboarding');
+          case SplashUnauthenticated():
+            // 未認証時はボタンを表示
+            _showButtons();
+          case SplashTimeout():
+          case SplashNetworkError():
+            // エラー時もボタンを表示
+            _showButtons();
+        }
       });
     });
 
@@ -147,7 +194,11 @@ class _SplashPageState extends ConsumerState<SplashPage>
           // コンテンツ
           SafeArea(
             child: AnimatedBuilder(
-              animation: Listenable.merge([_mainController, _glowController]),
+              animation: Listenable.merge([
+                _mainController,
+                _glowController,
+                _buttonsController,
+              ]),
               builder: (context, child) {
                 return Stack(
                   children: [
@@ -161,8 +212,11 @@ class _SplashPageState extends ConsumerState<SplashPage>
                           _buildTitle(context),
                           const SizedBox(height: 8),
                           _buildTagline(context),
-                          const Spacer(flex: 3),
-                          _buildBottomIndicator(context),
+                          const Spacer(flex: 2),
+                          if (_showAuthButtons)
+                            _buildAuthButtons(context)
+                          else
+                            _buildBottomIndicator(context),
                           const SizedBox(height: 40),
                         ],
                       ),
@@ -239,13 +293,15 @@ class _SplashPageState extends ConsumerState<SplashPage>
             boxShadow: [
               // 外側のソフトグロー
               BoxShadow(
-                color: AppTheme.accentPrimary.withValues(alpha: glowIntensity * 0.6),
+                color:
+                    AppTheme.accentPrimary.withValues(alpha: glowIntensity * 0.6),
                 blurRadius: 50,
                 spreadRadius: 5,
               ),
               // 中間のグロー
               BoxShadow(
-                color: AppTheme.particleWarm.withValues(alpha: glowIntensity * 0.3),
+                color:
+                    AppTheme.particleWarm.withValues(alpha: glowIntensity * 0.3),
                 blurRadius: 30,
                 spreadRadius: 2,
               ),
@@ -336,6 +392,74 @@ class _SplashPageState extends ConsumerState<SplashPage>
                 color: Colors.black.withValues(alpha: 0.5),
                 blurRadius: 4,
                 offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAuthButtons(BuildContext context) {
+    return SlideTransition(
+      position: _buttonsSlide,
+      child: Opacity(
+        opacity: _buttonsOpacity.value,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Column(
+            children: [
+              // Sign Up ボタン（メイン）
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () => context.push('/auth/signup'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.accentPrimary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(26),
+                    ),
+                    elevation: 4,
+                    shadowColor: AppTheme.accentPrimary.withValues(alpha: 0.4),
+                  ),
+                  child: const Text(
+                    'Sign Up',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Sign In ボタン（セカンダリ）
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: OutlinedButton(
+                  onPressed: () => context.push('/auth/signin'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.textPrimary,
+                    side: BorderSide(
+                      color: AppTheme.textPrimary.withValues(alpha: 0.5),
+                      width: 1.5,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(26),
+                    ),
+                  ),
+                  child: const Text(
+                    'Sign In',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

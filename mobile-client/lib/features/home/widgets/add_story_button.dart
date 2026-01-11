@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../auth/providers/auth_provider.dart';
 
 /// 新規投稿ボタン（＋ボタン）
-class AddStoryButton extends StatelessWidget {
+/// 背景に自分のアバター画像を表示
+class AddStoryButton extends ConsumerWidget {
   final double size;
   final VoidCallback? onTap;
 
@@ -13,7 +16,14 @@ class AddStoryButton extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // 認証状態からプロフィールを取得
+    final authState = ref.watch(authProvider);
+    String? avatarUrl;
+    if (authState is AuthStateAuthenticated) {
+      avatarUrl = authState.profile.avatarUrl;
+    }
+
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -31,19 +41,47 @@ class AddStoryButton extends StatelessWidget {
                 strokeAlign: BorderSide.strokeAlignOutside,
               ),
             ),
-            child: Center(
-              child: Container(
-                width: size * 0.4,
-                height: size * 0.4,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: AppTheme.gradientAccent,
-                ),
-                child: Icon(
-                  Icons.add_rounded,
-                  color: AppTheme.textInverse,
-                  size: size * 0.28,
-                ),
+            child: ClipOval(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // 背景：アバター画像または人物アイコン
+                  if (avatarUrl != null)
+                    Image.network(
+                      avatarUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
+                    )
+                  else
+                    _buildDefaultAvatar(),
+                  // 薄い暗いオーバーレイ
+                  Container(
+                    color: Colors.black.withValues(alpha: 0.3),
+                  ),
+                  // 中央の＋ボタン
+                  Center(
+                    child: Container(
+                      width: size * 0.4,
+                      height: size * 0.4,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: AppTheme.gradientAccent,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.accentPrimary.withValues(alpha: 0.4),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.add_rounded,
+                        color: AppTheme.textInverse,
+                        size: size * 0.28,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -61,6 +99,19 @@ class AddStoryButton extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDefaultAvatar() {
+    return Container(
+      color: AppTheme.bgSecondary,
+      child: Center(
+        child: Icon(
+          Icons.person_rounded,
+          color: AppTheme.textTertiary,
+          size: size * 0.5,
+        ),
       ),
     );
   }

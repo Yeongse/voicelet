@@ -13,14 +13,14 @@ import {
 function formatUserResponse(user: {
   id: string
   email: string
-  name: string
+  name: string | null
   createdAt: Date
   updatedAt: Date
 }) {
   return {
     id: user.id,
     email: user.email,
-    name: user.name,
+    name: user.name ?? '',
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
   }

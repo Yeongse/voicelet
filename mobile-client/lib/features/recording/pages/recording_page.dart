@@ -253,7 +253,7 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
                               await _recordingService.cancelRecording();
                             }
                             if (context.mounted) {
-                              context.go('/');
+                              context.go('/home');
                             }
                           },
                         ),

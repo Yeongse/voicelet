@@ -7,6 +7,7 @@ import '../providers/home_providers.dart';
 import '../widgets/my_story_section.dart';
 import '../widgets/following_tab.dart';
 import '../widgets/discover_tab.dart';
+import '../widgets/profile_drawer.dart';
 import '../../auth/providers/auth_provider.dart';
 
 /// ホーム画面
@@ -20,6 +21,7 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -31,6 +33,10 @@ class _HomePageState extends ConsumerState<HomePage>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _openProfileDrawer() {
+    _scaffoldKey.currentState?.openEndDrawer();
   }
 
   void _navigateToRecording() {
@@ -81,6 +87,9 @@ class _HomePageState extends ConsumerState<HomePage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
+      endDrawer: const ProfileDrawer(),
+      drawerScrimColor: Colors.black.withValues(alpha: 0.5),
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -195,6 +204,12 @@ class _HomePageState extends ConsumerState<HomePage>
                 ],
               ),
             ),
+          ),
+          const SizedBox(width: 12),
+          // プロフィールボタン
+          ProfileAvatarButton(
+            onTap: _openProfileDrawer,
+            size: 36,
           ),
         ],
       ),

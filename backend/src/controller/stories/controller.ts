@@ -48,7 +48,7 @@ export default async function (fastify: ServerInstance) {
           expiresAt: { gt: new Date() },
         },
         include: {
-          user: { select: { id: true, name: true, avatarUrl: true } },
+          user: { select: { id: true, name: true, avatarPath: true } },
           views: { where: { userId }, select: { id: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -80,7 +80,11 @@ export default async function (fastify: ServerInstance) {
           }
         } else {
           userStoriesMap.set(whisper.userId, {
-            user: whisper.user,
+            user: {
+              id: whisper.user.id,
+              name: whisper.user.name ?? '',
+              avatarUrl: whisper.user.avatarPath,
+            },
             stories: [storyItem],
             hasUnviewed: !isViewed,
             latestCreatedAt: whisper.createdAt,

@@ -6,7 +6,8 @@ import '../../auth/providers/auth_provider.dart';
 final homeApiServiceProvider = Provider((ref) => HomeApiService());
 
 /// フォロー中ユーザーのストーリー
-final storiesProvider = FutureProvider.autoDispose<List<UserStory>>((ref) async {
+/// keepAlive()を使用してタブ切り替え時のちらつきを防止
+final storiesProvider = FutureProvider<List<UserStory>>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return [];
 
@@ -25,7 +26,8 @@ final myWhispersProvider = FutureProvider.autoDispose<List<MyWhisper>>((ref) asy
 });
 
 /// おすすめユーザー一覧
-final discoverProvider = FutureProvider.autoDispose<List<DiscoverUser>>((ref) async {
+/// keepAlive()を使用してタブ切り替え時のちらつきを防止
+final discoverProvider = FutureProvider<List<DiscoverUser>>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return [];
 

@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import fastifyAutoload from '@fastify/autoload'
@@ -10,6 +11,7 @@ import {
   validatorCompiler,
   jsonSchemaTransform,
 } from 'fastify-type-provider-zod'
+import { registerJwtAuth } from './lib/auth'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -38,6 +40,9 @@ async function buildApp() {
   // Zodバリデーターの設定
   app.setValidatorCompiler(validatorCompiler)
   app.setSerializerCompiler(serializerCompiler)
+
+  // JWT認証の設定
+  await registerJwtAuth(app)
 
   // CORSの設定
   await app.register(fastifyCors, {

@@ -27,12 +27,13 @@ module "storage" {
 }
 
 module "run-service" {
-  source          = "./modules/run-service"
-  project         = local.project
-  location        = local.location
-  service_name    = local.service_name
-  sa_email        = module.account.run_app_executor_email
-  gcs_bucket_name = module.storage.bucket_name
+  source                 = "./modules/run-service"
+  project                = local.project
+  location               = local.location
+  service_name           = local.service_name
+  sa_email               = module.account.run_app_executor_email
+  gcs_bucket_name        = module.storage.bucket_name
+  gcs_avatar_bucket_name = module.storage.avatar_bucket_name
 
   depends_on = [module.secrets, module.storage]
 }

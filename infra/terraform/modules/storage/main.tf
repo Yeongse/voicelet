@@ -44,6 +44,44 @@ resource "google_storage_bucket" "audio" {
   }
 }
 
+# Profile avatar images storage bucket
+resource "google_storage_bucket" "avatar" {
+  name     = "${var.service_name}-avatar-${var.project}"
+  location = var.location
+
+  # Uniform bucket-level access (recommended for security)
+  uniform_bucket_level_access = true
+
+  # Prevent public access
+  public_access_prevention = "enforced"
+
+  # Storage class
+  storage_class = "STANDARD"
+
+  # No lifecycle rule - avatars are kept indefinitely
+
+  # CORS configuration for signed URL uploads from mobile
+  cors {
+    origin          = ["*"]
+    method          = ["GET", "PUT", "HEAD"]
+    response_header = ["Content-Type", "Content-Length"]
+    max_age_seconds = 3600
+  }
+
+  # Versioning disabled
+  versioning {
+    enabled = false
+  }
+
+  # Force destroy for easier cleanup in dev
+  force_destroy = true
+
+  labels = {
+    name        = "${var.service_name}-avatar"
+    environment = var.environment
+  }
+}
+
 # Note: The backend service account has roles/storage.objectAdmin and 
 # roles/iam.serviceAccountTokenCreator granted at the project level (in account module).
 # This allows generating signed URLs for upload/download from any bucket in the project.

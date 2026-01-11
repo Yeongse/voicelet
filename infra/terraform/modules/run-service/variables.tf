@@ -23,3 +23,8 @@ variable "gcs_bucket_name" {
   description = "GCS bucket name for audio files"
   type        = string
 }
+
+variable "gcs_avatar_bucket_name" {
+  description = "GCS bucket name for avatar images"
+  type        = string
+}

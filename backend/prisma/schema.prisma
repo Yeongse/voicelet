@@ -18,10 +18,14 @@ model User {
   id        String    @id @default(uuid())
   email     String    @unique
   name      String
+  avatarUrl String?   @map("avatar_url")
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
 
-  whispers  Whisper[]
+  whispers   Whisper[]
+  followers  Follow[]  @relation("following")
+  following  Follow[]  @relation("follower")
+  views      WhisperView[]
 
   @@map("users")
 }
@@ -39,10 +43,49 @@ model Whisper {
   createdAt  DateTime @default(now()) @map("created_at")
   expiresAt  DateTime @map("expires_at")
 
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  views      WhisperView[]
 
   @@index([userId])
   @@index([createdAt])
   @@index([expiresAt])
   @@map("whispers")
+}
+
+// ===========================================
+// Follow Model (フォロー関係)
+// ===========================================
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String   @map("follower_id")
+  followingId String   @map("following_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  follower    User     @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@map("follows")
+}
+
+// ===========================================
+// WhisperView Model (視聴履歴)
+// ===========================================
+
+model WhisperView {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  whisperId String   @map("whisper_id")
+  viewedAt  DateTime @default(now()) @map("viewed_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  whisper   Whisper  @relation(fields: [whisperId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, whisperId])
+  @@index([userId])
+  @@index([whisperId])
+  @@map("whisper_views")
 }

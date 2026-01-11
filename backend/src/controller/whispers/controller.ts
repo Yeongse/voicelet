@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import { prisma } from '../../database'
 import { type ServerInstance } from '../../lib/fastify'
 import { buildPaginationResponse, calculatePagination } from '../../lib/pagination'
@@ -200,13 +201,9 @@ export default async function (fastify: ServerInstance) {
         tags: ['Whisper'],
         summary: '再生用署名付きURL取得',
         description: '指定されたWhisperの再生用署名付きURLを生成します。',
-        params: {
-          type: 'object',
-          properties: {
-            whisperId: { type: 'string' },
-          },
-          required: ['whisperId'],
-        },
+        params: z.object({
+          whisperId: z.string(),
+        }),
         response: {
           200: audioUrlResponseSchema,
           404: errorResponseSchema,

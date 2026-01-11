@@ -106,7 +106,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
 
     _mainController.reverse().then((_) {
       if (mounted) {
-        context.go('/recording');
+        context.go('/home');
       }
     });
   }

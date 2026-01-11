@@ -20,15 +20,25 @@ resource "google_cloud_run_v2_service" "this" {
       name  = "app-backend"
       image = "${var.location}-docker.pkg.dev/${var.project}/${var.service_name}-app-repository-docker/app-backend:latest"
 
-      env {
-        name  = "PORT"
-        value = "8000"
+      # コンテナがリッスンするポート（PORT環境変数に自動設定される）
+      ports {
+        container_port = 3002
       }
 
+      # ============================================
+      # 自動設定される環境変数（Terraform管理）
+      # NOTE: PORT は ports.container_port の値が自動設定される
+      # ============================================
       env {
         name  = "GCS_BUCKET_NAME"
         value = var.gcs_bucket_name
       }
+
+      # ============================================
+      # 手動設定が必要な環境変数（Secret Manager経由）
+      # デプロイ前に gcloud secrets versions add で値を設定すること
+      # 詳細は infra/README.md の「3.2. Secret Manager の設定」を参照
+      # ============================================
 
       # Supabase URL from Secret Manager
       env {
@@ -63,6 +73,17 @@ resource "google_cloud_run_v2_service" "this" {
         }
       }
 
+      # Database URL from Secret Manager
+      env {
+        name = "DATABASE_URL"
+        value_source {
+          secret_key_ref {
+            secret  = "${var.service_name}-database-url"
+            version = "latest"
+          }
+        }
+      }
+
       resources {
         cpu_idle          = true
         startup_cpu_boost = false
@@ -78,7 +99,7 @@ resource "google_cloud_run_v2_service" "this" {
         period_seconds    = 240
         failure_threshold = 1
         tcp_socket {
-          port = 8000
+          port = 3002
         }
       }
     }

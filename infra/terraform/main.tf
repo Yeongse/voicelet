@@ -17,28 +17,6 @@ module "secrets" {
   sa_email     = module.account.run_app_executor_email
 }
 
-module "run-service" {
-  source          = "./modules/run-service"
-  project         = local.project
-  location        = local.location
-  service_name    = local.service_name
-  domain          = local.domain_name
-  sa_email        = module.account.run_app_executor_email
-  gcs_bucket_name = module.storage.bucket_name
-
-  depends_on = [module.secrets]
-}
-
-module "dns" {
-  source         = "./modules/dns/"
-  service_name   = local.service_name
-  domain         = local.domain_name
-  is_apex_domain = true
-  # dns_records_A    = module.run-service.dns_records_A
-  # dns_records_AAAA = module.run-service.dns_records_AAAA
-  # dns_record_WWW   = module.run-service.dns_record_WWW
-}
-
 module "storage" {
   source       = "./modules/storage"
   project      = local.project
@@ -46,6 +24,17 @@ module "storage" {
   service_name = local.service_name
   sa_email     = module.account.run_app_executor_email
   environment  = "dev"
+}
+
+module "run-service" {
+  source          = "./modules/run-service"
+  project         = local.project
+  location        = local.location
+  service_name    = local.service_name
+  sa_email        = module.account.run_app_executor_email
+  gcs_bucket_name = module.storage.bucket_name
+
+  depends_on = [module.secrets, module.storage]
 }
 
 module "cron" {

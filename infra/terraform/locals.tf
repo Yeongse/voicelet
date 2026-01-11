@@ -1,7 +1,6 @@
 locals {
-  project      = "<project_id>"
-  domain_name  = "<domain_name>"
-  service_name = "<service_name>" # 任意のサービス名
+  project      = "voicelet"
+  service_name = "voicelet"
   location     = "asia-northeast1"
 }
 

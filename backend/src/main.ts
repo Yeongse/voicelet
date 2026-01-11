@@ -41,8 +41,24 @@ async function buildApp() {
 
   // CORSの設定
   await app.register(fastifyCors, {
-    origin:
-      process.env.NODE_ENV === "production" ? process.env.CORS_ORIGIN : true,
+    origin: (origin, cb) => {
+      // ヘルスチェックなどOriginヘッダーがない場合は許可
+      if (!origin) {
+        cb(null, true);
+        return;
+      }
+      // 本番環境ではCORS_ORIGINをチェック、開発環境ではすべて許可
+      if (process.env.NODE_ENV !== "production") {
+        cb(null, true);
+        return;
+      }
+      const allowedOrigin = process.env.CORS_ORIGIN;
+      if (allowedOrigin === "*" || origin === allowedOrigin) {
+        cb(null, true);
+      } else {
+        cb(new Error("Not allowed by CORS"), false);
+      }
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     credentials: true,
   });

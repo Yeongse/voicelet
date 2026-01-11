@@ -19,11 +19,6 @@ variable "service_name" {
   type        = string
 }
 
-variable "domain" {
-  description = "Domain Name"
-  type        = string
-}
-
 variable "gcs_bucket_name" {
   description = "GCS bucket name for audio files"
   type        = string

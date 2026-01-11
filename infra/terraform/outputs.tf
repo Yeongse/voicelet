@@ -1,7 +1,3 @@
-output "name_servers" {
-  value = module.dns.name_servers
-}
-
 # output "url" {
 #   value = module.run-service.url
 # }

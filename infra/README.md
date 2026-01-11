@@ -246,7 +246,58 @@
   - https://zenn.dev/taiyou/articles/d07983a189a6cc
   - https://zenn.dev/jj/articles/cloudrun-v2-with-nginx
 
-### 3.2. Cloud Run および Cloud DNS
+### 3.2. Secret Manager の設定（必須）
+
+Cloud Run デプロイ前に、以下のシークレットに値を設定する必要があります。
+
+#### 3.2.1. Supabase プロジェクトの準備
+
+1. [Supabase](https://supabase.com/) でプロジェクトを作成
+2. Project Settings > API から以下の値を取得：
+   - **Project URL** → `SUPABASE_URL` 用
+   - **service_role key** → `SUPABASE_SERVICE_KEY` 用
+
+#### 3.2.2. JWT シークレットの生成
+
+以下のコマンドで安全なランダム文字列を生成：
+
+```bash
+openssl rand -base64 32
+```
+
+#### 3.2.3. Secret Manager に値を設定
+
+terraform apply で secrets モジュールを適用後、以下のコマンドでシークレットの値を設定：
+
+```bash
+# Supabase URL
+echo -n "https://xxxxx.supabase.co" | \
+  gcloud secrets versions add <service_name>-supabase-url --data-file=-
+
+# Supabase Service Key
+echo -n "eyJhbGciOiJIUzI1NiIs..." | \
+  gcloud secrets versions add <service_name>-supabase-service-key --data-file=-
+
+# JWT Secret
+echo -n "your-generated-jwt-secret" | \
+  gcloud secrets versions add <service_name>-jwt-secret --data-file=-
+```
+
+**注意**: `<service_name>` は `config.env` で設定した `SERVICE_NAME` に置き換えてください。
+
+#### 3.2.4. 設定確認
+
+```bash
+# シークレット一覧を確認
+gcloud secrets list
+
+# バージョンが作成されていることを確認
+gcloud secrets versions list <service_name>-supabase-url
+gcloud secrets versions list <service_name>-supabase-service-key
+gcloud secrets versions list <service_name>-jwt-secret
+```
+
+### 3.3. Cloud Run および Cloud DNS
 
 - terraform ディレクトリにて terraform apply を実行
 
@@ -376,14 +427,36 @@
 
   ![](./docs/assets/deploy-003.png)
 
-### 5. 備考
+### 5. 環境変数一覧
 
-#### 5.1. 請求額の確認
+Cloud Run に設定される環境変数の一覧：
+
+| 環境変数 | 設定方法 | 説明 |
+|---------|---------|------|
+| `PORT` | 自動（固定値） | アプリケーションのリッスンポート |
+| `GCS_BUCKET_NAME` | 自動（Terraform） | 音声ファイル保存用GCSバケット名 |
+| `SUPABASE_URL` | 手動（Secret Manager） | Supabase プロジェクトURL |
+| `SUPABASE_SERVICE_KEY` | 手動（Secret Manager） | Supabase サービスロールキー |
+| `JWT_SECRET` | 手動（Secret Manager） | JWT署名用シークレット |
+
+### 6. Cloud Scheduler（定期実行ジョブ）
+
+Terraform で以下の定期実行ジョブが作成されます：
+
+| ジョブ名 | スケジュール | エンドポイント | 説明 |
+|---------|------------|---------------|------|
+| `<service_name>-delete-expired-posts` | 毎時0分 | `POST /jobs/cleanup` | 期限切れ投稿の削除 |
+
+**注意**: Cloud Run の `/jobs/cleanup` エンドポイントを実装する必要があります。
+
+### 7. 備考
+
+#### 7.1. 請求額の確認
 
 - [このリンク](https://console.cloud.google.com/billing) から請求先アカウント一覧に飛ぶ
 - 該当の請求先アカウントのアカウント名 をクリックすると詳細を確認できる
 
-#### 5.2. インフラリソースが不要になった場合
+#### 7.2. インフラリソースが不要になった場合
 
 - 以下のコマンドを実行する
 

@@ -149,21 +149,68 @@ class _SplashPageState extends ConsumerState<SplashPage>
             child: AnimatedBuilder(
               animation: Listenable.merge([_mainController, _glowController]),
               builder: (context, child) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Spacer(flex: 2),
-                      _buildLogo(context),
-                      const SizedBox(height: 32),
-                      _buildTitle(context),
-                      const SizedBox(height: 8),
-                      _buildTagline(context),
-                      const Spacer(flex: 3),
-                      _buildBottomIndicator(context),
-                      const SizedBox(height: 40),
-                    ],
-                  ),
+                return Stack(
+                  children: [
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Spacer(flex: 2),
+                          _buildLogo(context),
+                          const SizedBox(height: 32),
+                          _buildTitle(context),
+                          const SizedBox(height: 8),
+                          _buildTagline(context),
+                          const Spacer(flex: 3),
+                          _buildBottomIndicator(context),
+                          const SizedBox(height: 40),
+                        ],
+                      ),
+                    ),
+                    // 開発者メニュー（右上）
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Opacity(
+                        opacity: _taglineOpacity.value * 0.7,
+                        child: GestureDetector(
+                          onTap: () => context.go('/dev/whispers'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: AppTheme.warning.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.developer_mode_rounded,
+                                  size: 14,
+                                  color: AppTheme.warning,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'DEV',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.warning,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               },
             ),

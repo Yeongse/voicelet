@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../whisper/providers/whisper_provider.dart';
 import '../services/storage_service.dart';
 import '../widgets/waveform_indicator.dart';
 
 /// プレビュー画面
-class PreviewPage extends StatefulWidget {
+class PreviewPage extends ConsumerStatefulWidget {
   final String filePath;
   final String fileName;
   final Duration duration;
@@ -20,10 +23,10 @@ class PreviewPage extends StatefulWidget {
   });
 
   @override
-  State<PreviewPage> createState() => _PreviewPageState();
+  ConsumerState<PreviewPage> createState() => _PreviewPageState();
 }
 
-class _PreviewPageState extends State<PreviewPage>
+class _PreviewPageState extends ConsumerState<PreviewPage>
     with TickerProviderStateMixin {
   final AudioPlayer _audioPlayer = AudioPlayer();
   final StorageService _storageService = StorageService();
@@ -36,6 +39,7 @@ class _PreviewPageState extends State<PreviewPage>
   StreamSubscription<PlayerState>? _playerStateSubscription;
   StreamSubscription<Duration>? _positionSubscription;
   StreamSubscription<Duration>? _durationSubscription;
+  StreamSubscription<void>? _playerCompleteSubscription;
 
   late AnimationController _fadeController;
   late AnimationController _glowController;
@@ -87,6 +91,16 @@ class _PreviewPageState extends State<PreviewPage>
         _totalDuration = duration;
       });
     });
+
+    // 再生完了時に状態をリセット
+    _playerCompleteSubscription = _audioPlayer.onPlayerComplete.listen((_) {
+      if (mounted) {
+        setState(() {
+          _position = Duration.zero;
+          _playerState = PlayerState.stopped;
+        });
+      }
+    });
   }
 
   void _generateWaveformData() {
@@ -99,7 +113,8 @@ class _PreviewPageState extends State<PreviewPage>
     if (_playerState == PlayerState.playing) {
       await _audioPlayer.pause();
     } else {
-      await _audioPlayer.resume();
+      // stopped, paused, completed いずれの状態でも再生開始
+      await _audioPlayer.play(DeviceFileSource(widget.filePath));
     }
   }
 
@@ -161,6 +176,7 @@ class _PreviewPageState extends State<PreviewPage>
     _playerStateSubscription?.cancel();
     _positionSubscription?.cancel();
     _durationSubscription?.cancel();
+    _playerCompleteSubscription?.cancel();
     _audioPlayer.dispose();
     _fadeController.dispose();
     _glowController.dispose();
@@ -476,41 +492,7 @@ class _PreviewPageState extends State<PreviewPage>
                         ),
                         const SizedBox(width: AppTheme.space4),
                         Expanded(
-                          child: _buildActionButton(
-                            icon: Icons.send_rounded,
-                            label: '投稿する',
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.check_circle_rounded,
-                                        color: AppTheme.accentPrimary,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      const Text(
-                                        '投稿しました',
-                                        style: TextStyle(
-                                          color: AppTheme.textPrimary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  backgroundColor:
-                                      AppTheme.bgElevated.withValues(alpha: 0.95),
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      AppTheme.radiusMd,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                            isPrimary: true,
-                          ),
+                          child: _buildPostButton(),
                         ),
                       ],
                     ),
@@ -596,6 +578,156 @@ class _PreviewPageState extends State<PreviewPage>
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPostButton() {
+    final postingProgress = ref.watch(postingProgressProvider);
+    final isLoading = postingProgress.isLoading;
+
+    return GestureDetector(
+      onTap: isLoading ? null : _handlePost,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          vertical: AppTheme.space4,
+        ),
+        decoration: BoxDecoration(
+          color: isLoading
+              ? AppTheme.accentPrimary.withValues(alpha: 0.6)
+              : AppTheme.accentPrimary,
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.accentPrimary.withValues(alpha: 0.4),
+              blurRadius: 15,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isLoading) ...[
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.textInverse),
+                ),
+              ),
+              const SizedBox(width: AppTheme.space2),
+              Text(
+                postingProgress.statusMessage,
+                style: const TextStyle(
+                  color: AppTheme.textInverse,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ] else ...[
+              const Icon(Icons.send_rounded, color: AppTheme.textInverse, size: 20),
+              const SizedBox(width: AppTheme.space2),
+              const Text(
+                '投稿する',
+                style: TextStyle(
+                  color: AppTheme.textInverse,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handlePost() async {
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) {
+      _showErrorSnackBar('ユーザー情報が取得できません');
+      return;
+    }
+
+    final effectiveDuration =
+        _totalDuration.inMilliseconds > 0 ? _totalDuration : widget.duration;
+
+    final whisper = await ref.read(postingProgressProvider.notifier).postWhisper(
+      userId: userId,
+      filePath: widget.filePath,
+      fileName: widget.fileName,
+      durationSeconds: effectiveDuration.inSeconds,
+    );
+
+    if (whisper != null && mounted) {
+      _showSuccessSnackBar('投稿しました');
+      // 成功後、録音画面に戻る
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        context.go('/recording');
+      }
+    } else {
+      final progress = ref.read(postingProgressProvider);
+      _showErrorSnackBar(progress.errorMessage ?? 'エラーが発生しました');
+    }
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(
+              Icons.check_circle_rounded,
+              color: AppTheme.accentPrimary,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              message,
+              style: const TextStyle(color: AppTheme.textPrimary),
+            ),
+          ],
+        ),
+        backgroundColor: AppTheme.bgElevated.withValues(alpha: 0.95),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        ),
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              color: AppTheme.error,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(color: AppTheme.textPrimary),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppTheme.bgElevated.withValues(alpha: 0.95),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
       ),
     );

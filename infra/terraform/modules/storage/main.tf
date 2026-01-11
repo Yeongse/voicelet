@@ -44,19 +44,7 @@ resource "google_storage_bucket" "audio" {
   }
 }
 
-# Grant the backend service account permission to manage objects
-# This allows generating signed URLs for upload/download
-resource "google_storage_bucket_iam_member" "backend_object_admin" {
-  bucket = google_storage_bucket.audio.name
-  role   = "roles/storage.objectAdmin"
-  member = "serviceAccount:${var.sa_email}"
-}
-
-# Grant the service account permission to sign blobs (required for signed URLs)
-# The service account needs to be able to sign URLs on its own behalf
-resource "google_service_account_iam_member" "token_creator" {
-  service_account_id = "projects/${var.project}/serviceAccounts/${var.sa_email}"
-  role               = "roles/iam.serviceAccountTokenCreator"
-  member             = "serviceAccount:${var.sa_email}"
-}
+# Note: The backend service account has roles/storage.objectAdmin and 
+# roles/iam.serviceAccountTokenCreator granted at the project level (in account module).
+# This allows generating signed URLs for upload/download from any bucket in the project.
 

@@ -15,15 +15,32 @@ datasource db {
 // ===========================================
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
+  id        String    @id @default(uuid())
+  email     String    @unique
   name      String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  whispers  Whisper[]
 
   @@map("users")
 }
 
 // ===========================================
-// 以下、プロジェクトに合わせてモデルを追加
+// Whisper Model (音声投稿)
 // ===========================================
+
+model Whisper {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  bucketName String   @map("bucket_name")
+  fileName   String   @map("file_name")
+  duration   Int      // 秒数
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("whispers")
+}

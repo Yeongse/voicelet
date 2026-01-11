@@ -14,11 +14,6 @@ variable "service_name" {
   type        = string
 }
 
-variable "sa_email" {
-  description = "Service account email for backend (Cloud Run)"
-  type        = string
-}
-
 variable "environment" {
   description = "Environment name (dev, staging, prod)"
   type        = string

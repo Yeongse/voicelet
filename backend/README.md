@@ -102,3 +102,101 @@ function calculatePagination(page: number, limit: number): [number, number] {
 ## API ドキュメント
 
 開発環境では `/docs` でSwagger UIにアクセス可能
+
+---
+
+## GCS（Google Cloud Storage）セットアップ
+
+このバックエンドは音声ファイルのアップロード/ダウンロードに署名付きURLを使用します。
+ローカル開発時にGCS関連の機能を使うには、以下の設定が必要です。
+
+### エラーが出る場合
+
+```
+Permission 'iam.serviceAccounts.signBlob' denied on resource
+```
+
+このエラーは、署名付きURLを生成する権限がないことを示しています。
+
+### 解決方法
+
+#### 方法1: Impersonation（推奨・キーファイル不要）
+
+サービスアカウントに「なりすまし」て認証する方法です。
+
+**前提条件:**
+- Terraformで `developer_emails` にあなたのGoogleアカウントが追加されていること
+- `terraform apply` が実行済みであること
+
+```bash
+# 1. Terraformで開発者メールアドレスを設定（初回のみ）
+# infra/terraform/locals.tf の developer_emails にメールアドレスを追加
+
+# 2. Terraform適用（初回のみ）
+cd infra/terraform
+terraform apply
+
+# 3. Impersonationで認証（毎回必要）
+gcloud auth application-default login \
+  --impersonate-service-account=voicelet-run-app-executor@voicelet.iam.gserviceaccount.com
+```
+
+#### 方法2: サービスアカウントキーを使用
+
+JSONキーファイルをダウンロードして使用する方法です。
+
+```bash
+# 1. GCPコンソールでサービスアカウントキーをダウンロード
+#    IAM > サービスアカウント > voicelet-run-app-executor > キー > 新しいキーを作成
+
+# 2. 環境変数を設定
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/voicelet-run-app-executor-key.json
+
+# 3. バックエンドを起動
+npm run dev
+```
+
+### 必要な環境変数
+
+`.env` ファイルに以下を設定：
+
+```bash
+# GCSバケット名（必須）
+GCS_BUCKET_NAME=voicelet-audio-voicelet
+
+# サービスアカウントキーを使う場合のみ
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json
+```
+
+### Cloud Run（本番環境）について
+
+Cloud Runでは、Terraformで以下のロールが自動的に付与されるため、追加設定は不要です：
+
+- `roles/storage.objectAdmin` - GCSオブジェクトの読み書き
+- `roles/iam.serviceAccountTokenCreator` - 署名付きURL生成
+
+---
+
+## Terraformの適用手順（インフラ管理者向け）
+
+GCS署名付きURLの権限を設定するために、以下を実行：
+
+```bash
+# 1. プロジェクト所有者/編集者権限を持つアカウントで認証
+gcloud auth application-default login
+
+# 2. Terraformディレクトリに移動
+cd infra/terraform
+
+# 3. 変更内容を確認
+terraform plan
+
+# 4. 適用
+terraform apply
+```
+
+### 変更内容
+
+- サービスアカウントに `roles/storage.objectAdmin` を付与
+- サービスアカウントに `roles/iam.serviceAccountTokenCreator` を付与
+- 開発者のImpersonation権限を設定（`developer_emails` に追加した場合）

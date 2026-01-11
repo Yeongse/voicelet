@@ -10,6 +10,7 @@ import 'features/users/pages/user_detail_page.dart';
 import 'features/recording/pages/recording_page.dart';
 import 'features/recording/pages/preview_page.dart';
 import 'features/splash/pages/splash_page.dart';
+import 'features/whisper/pages/whisper_list_page.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -47,6 +48,10 @@ final _router = GoRouter(
           duration: extra['duration'] as Duration,
         );
       },
+    ),
+    GoRoute(
+      path: '/dev/whispers',
+      builder: (context, state) => const WhisperListPage(),
     ),
   ],
 );

@@ -9,6 +9,7 @@ module "account" {
   project          = local.project
   service_name     = local.service_name
   run_app_executor = local.run_app_executor
+  developer_emails = local.developer_emails
 }
 
 module "secrets" {
@@ -22,7 +23,6 @@ module "storage" {
   project      = local.project
   location     = local.location
   service_name = local.service_name
-  sa_email     = module.account.run_app_executor_email
   environment  = "dev"
 }
 

@@ -1,15 +1,12 @@
-import { prisma } from "../../database";
-import { type ServerInstance } from "../../lib/fastify";
-import {
-  buildPaginationResponse,
-  calculatePagination,
-} from "../../lib/pagination";
+import { prisma } from '../../database'
+import { type ServerInstance } from '../../lib/fastify'
+import { buildPaginationResponse, calculatePagination } from '../../lib/pagination'
 import {
   generateUploadSignedUrl,
   generateDownloadSignedUrl,
   getBucketName,
   fileExists,
-} from "../../services/storage";
+} from '../../services/storage'
 import {
   signedUrlRequestSchema,
   signedUrlResponseSchema,
@@ -19,7 +16,7 @@ import {
   listWhispersResponseSchema,
   audioUrlResponseSchema,
   errorResponseSchema,
-} from "./schema";
+} from './schema'
 
 export default async function (fastify: ServerInstance) {
   // ===========================================
@@ -27,12 +24,12 @@ export default async function (fastify: ServerInstance) {
   // アップロード用の署名付きURLを生成
   // ===========================================
   fastify.post(
-    "/signed-url",
+    '/signed-url',
     {
       schema: {
-        tags: ["Whisper"],
-        summary: "署名付きURL生成",
-        description: "GCSへのアップロード用署名付きURLを生成します。",
+        tags: ['Whisper'],
+        summary: '署名付きURL生成',
+        description: 'GCSへのアップロード用署名付きURLを生成します。',
         body: signedUrlRequestSchema,
         response: {
           200: signedUrlResponseSchema,
@@ -41,44 +38,43 @@ export default async function (fastify: ServerInstance) {
       },
     },
     async (request, reply) => {
-      const { fileName, userId } = request.body;
+      const { fileName, userId } = request.body
 
       // ユーザー存在確認
       const user = await prisma.user.findUnique({
         where: { id: userId },
-      });
+      })
 
       if (!user) {
-        return reply.status(404).send({ message: "ユーザーが見つかりません" });
+        return reply.status(404).send({ message: 'ユーザーが見つかりません' })
       }
 
       const { signedUrl, expiresAt } = await generateUploadSignedUrl({
         fileName,
-        contentType: "audio/mp4",
+        contentType: 'audio/mp4',
         expiresInMinutes: 15,
-      });
+      })
 
       return reply.send({
         signedUrl,
         bucketName: getBucketName(),
         fileName,
         expiresAt: expiresAt.toISOString(),
-      });
-    }
-  );
+      })
+    },
+  )
 
   // ===========================================
   // POST /api/whispers
   // 音声投稿を作成
   // ===========================================
   fastify.post(
-    "/",
+    '/',
     {
       schema: {
-        tags: ["Whisper"],
-        summary: "音声投稿作成",
-        description:
-          "GCSへのアップロード完了後に呼び出し、音声投稿のメタデータを保存します。",
+        tags: ['Whisper'],
+        summary: '音声投稿作成',
+        description: 'GCSへのアップロード完了後に呼び出し、音声投稿のメタデータを保存します。',
         body: createWhisperRequestSchema,
         response: {
           201: createWhisperResponseSchema,
@@ -88,26 +84,26 @@ export default async function (fastify: ServerInstance) {
       },
     },
     async (request, reply) => {
-      const { userId, fileName, duration } = request.body;
+      const { userId, fileName, duration } = request.body
 
       // ユーザー存在確認
       const user = await prisma.user.findUnique({
         where: { id: userId },
-      });
+      })
 
       if (!user) {
-        return reply.status(404).send({ message: "ユーザーが見つかりません" });
+        return reply.status(404).send({ message: 'ユーザーが見つかりません' })
       }
 
       // ファイルがGCSに存在するか確認
-      const exists = await fileExists(fileName);
+      const exists = await fileExists(fileName)
       if (!exists) {
         return reply.status(400).send({
-          message: "音声ファイルがアップロードされていません",
-        });
+          message: '音声ファイルがアップロードされていません',
+        })
       }
 
-      const bucketName = getBucketName();
+      const bucketName = getBucketName()
 
       const whisper = await prisma.whisper.create({
         data: {
@@ -116,10 +112,10 @@ export default async function (fastify: ServerInstance) {
           fileName,
           duration,
         },
-      });
+      })
 
       return reply.status(201).send({
-        message: "音声投稿を作成しました",
+        message: '音声投稿を作成しました',
         whisper: {
           id: whisper.id,
           userId: whisper.userId,
@@ -128,21 +124,21 @@ export default async function (fastify: ServerInstance) {
           duration: whisper.duration,
           createdAt: whisper.createdAt.toISOString(),
         },
-      });
-    }
-  );
+      })
+    },
+  )
 
   // ===========================================
   // GET /api/whispers
   // 音声投稿一覧を取得
   // ===========================================
   fastify.get(
-    "/",
+    '/',
     {
       schema: {
-        tags: ["Whisper"],
-        summary: "音声投稿一覧",
-        description: "音声投稿の一覧を取得します。userIdでフィルタ可能。",
+        tags: ['Whisper'],
+        summary: '音声投稿一覧',
+        description: '音声投稿の一覧を取得します。userIdでフィルタ可能。',
         querystring: listWhispersQuerySchema,
         response: {
           200: listWhispersResponseSchema,
@@ -150,21 +146,21 @@ export default async function (fastify: ServerInstance) {
       },
     },
     async (request, reply) => {
-      const { page, limit, userId } = request.query;
+      const { page, limit, userId } = request.query
 
-      const { skip, take } = calculatePagination({ page, limit });
+      const { skip, take } = calculatePagination({ page, limit })
 
-      const where = userId ? { userId } : {};
+      const where = userId ? { userId } : {}
 
       const [whispers, total] = await Promise.all([
         prisma.whisper.findMany({
           where,
           skip,
           take,
-          orderBy: { createdAt: "desc" },
+          orderBy: { createdAt: 'desc' },
         }),
         prisma.whisper.count({ where }),
-      ]);
+      ])
 
       const whispersData = whispers.map((whisper) => ({
         id: whisper.id,
@@ -173,36 +169,36 @@ export default async function (fastify: ServerInstance) {
         fileName: whisper.fileName,
         duration: whisper.duration,
         createdAt: whisper.createdAt.toISOString(),
-      }));
+      }))
 
       const response = buildPaginationResponse({
         data: whispersData,
         total,
         page,
         limit,
-      });
+      })
 
-      return reply.send(response);
-    }
-  );
+      return reply.send(response)
+    },
+  )
 
   // ===========================================
   // GET /api/whispers/:whisperId/audio-url
   // 再生用署名付きURLを取得
   // ===========================================
   fastify.get(
-    "/:whisperId/audio-url",
+    '/:whisperId/audio-url',
     {
       schema: {
-        tags: ["Whisper"],
-        summary: "再生用署名付きURL取得",
-        description: "指定されたWhisperの再生用署名付きURLを生成します。",
+        tags: ['Whisper'],
+        summary: '再生用署名付きURL取得',
+        description: '指定されたWhisperの再生用署名付きURLを生成します。',
         params: {
-          type: "object",
+          type: 'object',
           properties: {
-            whisperId: { type: "string" },
+            whisperId: { type: 'string' },
           },
-          required: ["whisperId"],
+          required: ['whisperId'],
         },
         response: {
           200: audioUrlResponseSchema,
@@ -211,29 +207,26 @@ export default async function (fastify: ServerInstance) {
       },
     },
     async (request, reply) => {
-      const { whisperId } = request.params as { whisperId: string };
+      const { whisperId } = request.params as { whisperId: string }
 
       const whisper = await prisma.whisper.findUnique({
         where: { id: whisperId },
-      });
+      })
 
       if (!whisper) {
-        return reply.status(404).send({ message: "投稿が見つかりません" });
+        return reply.status(404).send({ message: '投稿が見つかりません' })
       }
 
-      const expiresInMinutes = 60;
-      const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + expiresInMinutes);
+      const expiresInMinutes = 60
+      const expiresAt = new Date()
+      expiresAt.setMinutes(expiresAt.getMinutes() + expiresInMinutes)
 
-      const signedUrl = await generateDownloadSignedUrl(
-        whisper.fileName,
-        expiresInMinutes
-      );
+      const signedUrl = await generateDownloadSignedUrl(whisper.fileName, expiresInMinutes)
 
       return reply.send({
         signedUrl,
         expiresAt: expiresAt.toISOString(),
-      });
-    }
-  );
+      })
+    },
+  )
 }

@@ -3,6 +3,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'core/theme/app_theme.dart';
 import 'features/users/pages/user_list_page.dart';
@@ -14,8 +16,25 @@ import 'features/whisper/pages/whisper_list_page.dart';
 import 'features/home/pages/home_page.dart';
 import 'features/home/pages/story_viewer_page.dart';
 import 'features/home/models/home_models.dart';
+import 'features/auth/pages/login_page.dart';
+import 'features/auth/pages/signin_page.dart';
+import 'features/auth/pages/signup_page.dart';
+import 'features/auth/pages/onboarding_page.dart';
+import 'features/profile/pages/profile_page.dart';
+import 'features/profile/pages/profile_edit_page.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // .envファイルの読み込み
+  await dotenv.load(fileName: '.env');
+
+  // Supabaseの初期化
+  await Supabase.initialize(
+    url: dotenv.env['SUPABASE_URL'] ?? '',
+    anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
+  );
+
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -25,6 +44,22 @@ final _router = GoRouter(
     GoRoute(
       path: '/',
       builder: (context, state) => const SplashPage(),
+    ),
+    GoRoute(
+      path: '/login',
+      builder: (context, state) => const LoginPage(),
+    ),
+    GoRoute(
+      path: '/auth/signin',
+      builder: (context, state) => const SignInPage(),
+    ),
+    GoRoute(
+      path: '/auth/signup',
+      builder: (context, state) => const SignUpPage(),
+    ),
+    GoRoute(
+      path: '/auth/onboarding',
+      builder: (context, state) => const OnboardingPage(),
     ),
     GoRoute(
       path: '/users',
@@ -67,6 +102,14 @@ final _router = GoRouter(
         final userStory = extra['story'] as UserStory;
         return StoryViewerPage(story: userStory);
       },
+    ),
+    GoRoute(
+      path: '/profile',
+      builder: (context, state) => const ProfilePage(),
+    ),
+    GoRoute(
+      path: '/profile/edit',
+      builder: (context, state) => const ProfileEditPage(),
     ),
   ],
 );

@@ -75,3 +75,103 @@ export async function fileExists(fileName: string): Promise<boolean> {
 export function getBucketName(): string {
   return bucketName
 }
+
+// ===========================================
+// アバター画像用関数
+// ===========================================
+
+const avatarBucketName = process.env.GCS_AVATAR_BUCKET_NAME || 'voicelet-avatar-voicelet'
+
+/**
+ * アバターアップロード用オプション
+ */
+interface AvatarUploadOptions {
+  userId: string
+  contentType: 'image/jpeg' | 'image/png' | 'image/webp'
+  fileSize: number
+  fileName: string // uuid_timestamp形式
+}
+
+/**
+ * アバターアップロード結果
+ */
+interface AvatarUploadResult {
+  signedUrl: string
+  avatarPath: string
+  expiresAt: Date
+}
+
+/**
+ * Content-Typeから拡張子を取得
+ */
+function getExtensionFromContentType(contentType: string): string {
+  const map: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+  }
+  return map[contentType] || 'jpg'
+}
+
+/**
+ * アバター用署名付きアップロードURLを生成
+ * パス命名規則: avatars/{userId}/{fileName}.{ext}
+ * fileNameはクライアントから渡されたuuid_timestamp形式
+ */
+export async function generateAvatarUploadSignedUrl(
+  options: AvatarUploadOptions,
+): Promise<AvatarUploadResult> {
+  const { userId, contentType, fileName } = options
+
+  const ext = getExtensionFromContentType(contentType)
+  const avatarPath = `avatars/${userId}/${fileName}.${ext}`
+
+  const bucket = storage.bucket(avatarBucketName)
+  const file = bucket.file(avatarPath)
+
+  const expiresAt = new Date()
+  expiresAt.setMinutes(expiresAt.getMinutes() + 15)
+
+  const [signedUrl] = await file.getSignedUrl({
+    version: 'v4',
+    action: 'write',
+    expires: expiresAt,
+    contentType,
+  })
+
+  return { signedUrl, avatarPath, expiresAt }
+}
+
+/**
+ * アバター用署名付きダウンロードURLを生成
+ */
+export async function generateAvatarDownloadSignedUrl(
+  avatarPath: string,
+  expiresInMinutes = 60,
+): Promise<string> {
+  const bucket = storage.bucket(avatarBucketName)
+  const file = bucket.file(avatarPath)
+
+  const expiresAt = new Date()
+  expiresAt.setMinutes(expiresAt.getMinutes() + expiresInMinutes)
+
+  const [signedUrl] = await file.getSignedUrl({
+    version: 'v4',
+    action: 'read',
+    expires: expiresAt,
+  })
+
+  return signedUrl
+}
+
+/**
+ * ユーザーのアバターファイルを一括削除
+ */
+export async function deleteAvatarFiles(userId: string): Promise<void> {
+  const bucket = storage.bucket(avatarBucketName)
+  const prefix = `avatars/${userId}/`
+
+  const [files] = await bucket.getFiles({ prefix })
+
+  await Promise.all(files.map((file) => file.delete()))
+}

@@ -1,9 +1,22 @@
-import { PrismaClient } from '@prisma/client'
+import { config } from 'dotenv'
+import { PrismaClient, User } from '@prisma/client'
+
+// .envファイルを読み込み
+config()
 
 const prisma = new PrismaClient()
 
 // デモユーザーID（モバイルアプリと共通）
 const DEMO_USER_ID = 'demo-user-001'
+
+// 実際のユーザーメールアドレス
+const REAL_USER_EMAIL = 'yeongsekm@gmail.com'
+
+// 音声ファイル用バケット名（環境変数から取得）
+const GCS_BUCKET_NAME = process.env.GCS_BUCKET_NAME ?? 'voicelet-audio-voicelet'
+
+// テスト用の固定音声ファイル名（再生動作確認用）
+const DEMO_AUDIO_FILE = 'demo-user-001_1768107417528.m4a'
 
 async function main() {
   console.log('🌱 Seeding database...')
@@ -21,7 +34,7 @@ async function main() {
   console.log(`✅ Demo user ready: ${demoUser.id}`)
 
   // フォロー対象のサンプルユーザーを作成
-  const followingUsers = []
+  const followingUsers: User[] = []
   for (let i = 1; i <= 5; i++) {
     const user = await prisma.user.upsert({
       where: { email: `following${i}@example.com` },
@@ -36,7 +49,7 @@ async function main() {
   console.log(`✅ Created ${followingUsers.length} following users`)
 
   // おすすめ用のサンプルユーザーを作成
-  const discoverUsers = []
+  const discoverUsers: User[] = []
   for (let i = 1; i <= 5; i++) {
     const user = await prisma.user.upsert({
       where: { email: `discover${i}@example.com` },
@@ -79,8 +92,8 @@ async function main() {
       create: {
         id: `demo-whisper-${i}`,
         userId: DEMO_USER_ID,
-        bucketName: 'test-bucket',
-        fileName: `demo-audio-${i}.m4a`,
+        bucketName: GCS_BUCKET_NAME,
+        fileName: DEMO_AUDIO_FILE,
         duration: 10 + i * 5,
         expiresAt,
       },
@@ -98,8 +111,8 @@ async function main() {
         create: {
           id: `${user.id}-whisper-${i}`,
           userId: user.id,
-          bucketName: 'test-bucket',
-          fileName: `${user.id}-audio-${i}.m4a`,
+          bucketName: GCS_BUCKET_NAME,
+          fileName: DEMO_AUDIO_FILE,
           duration: 5 + Math.floor(Math.random() * 25),
           expiresAt,
         },
@@ -118,8 +131,8 @@ async function main() {
         create: {
           id: `${user.id}-whisper-${i}`,
           userId: user.id,
-          bucketName: 'test-bucket',
-          fileName: `${user.id}-audio-${i}.m4a`,
+          bucketName: GCS_BUCKET_NAME,
+          fileName: DEMO_AUDIO_FILE,
           duration: 5 + Math.floor(Math.random() * 25),
           expiresAt,
         },
@@ -127,6 +140,54 @@ async function main() {
     }
   }
   console.log('✅ Created discover users whispers')
+
+  // 実際のユーザー（yeongsekm@gmail.com）へのフォロワー追加
+  const realUser = await prisma.user.findUnique({
+    where: { email: REAL_USER_EMAIL },
+  })
+
+  if (realUser) {
+    console.log(`📧 Found real user: ${realUser.email}`)
+
+    // フォロー中ユーザーとおすすめユーザーが実際のユーザーをフォロー
+    const allSeedUsers = [...followingUsers, ...discoverUsers]
+    for (const user of allSeedUsers) {
+      await prisma.follow.upsert({
+        where: {
+          followerId_followingId: {
+            followerId: user.id,
+            followingId: realUser.id,
+          },
+        },
+        update: {},
+        create: {
+          followerId: user.id,
+          followingId: realUser.id,
+        },
+      })
+    }
+    console.log(`✅ Real user now has ${allSeedUsers.length} followers`)
+
+    // 実際のユーザーがフォロー中ユーザーをフォロー（フォロー中タブに表示されるように）
+    for (const user of followingUsers) {
+      await prisma.follow.upsert({
+        where: {
+          followerId_followingId: {
+            followerId: realUser.id,
+            followingId: user.id,
+          },
+        },
+        update: {},
+        create: {
+          followerId: realUser.id,
+          followingId: user.id,
+        },
+      })
+    }
+    console.log(`✅ Real user now follows ${followingUsers.length} users`)
+  } else {
+    console.log(`⚠️ Real user (${REAL_USER_EMAIL}) not found. Sign in first to create the user.`)
+  }
 
   console.log('🎉 Seeding completed!')
 }

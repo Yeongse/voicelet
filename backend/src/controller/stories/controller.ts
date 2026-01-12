@@ -40,7 +40,7 @@ export default async function (fastify: ServerInstance) {
         return reply.send({ data: [] })
       }
 
-      // フォロー中ユーザーの有効なWhisperを取得
+      // フォロー中ユーザーの有効なWhisperを取得（視聴済みも含む）
       const whispers = await prisma.whisper.findMany({
         where: {
           userId: { in: followingIds },
@@ -60,8 +60,8 @@ export default async function (fastify: ServerInstance) {
         {
           user: { id: string; name: string; avatarUrl: string | null }
           stories: Array<{ id: string; duration: number; createdAt: string; isViewed: boolean }>
-          hasUnviewed: boolean
           latestCreatedAt: Date
+          hasUnviewed: boolean
         }
       >()
 
@@ -77,9 +77,11 @@ export default async function (fastify: ServerInstance) {
         const existing = userStoriesMap.get(whisper.userId)
         if (existing) {
           existing.stories.push(storyItem)
-          if (!isViewed) existing.hasUnviewed = true
           if (whisper.createdAt > existing.latestCreatedAt) {
             existing.latestCreatedAt = whisper.createdAt
+          }
+          if (!isViewed) {
+            existing.hasUnviewed = true
           }
         } else {
           userStoriesMap.set(whisper.userId, {
@@ -89,8 +91,8 @@ export default async function (fastify: ServerInstance) {
               avatarUrl: whisper.user.avatarPath,
             },
             stories: [storyItem],
-            hasUnviewed: !isViewed,
             latestCreatedAt: whisper.createdAt,
+            hasUnviewed: !isViewed,
           })
         }
       }

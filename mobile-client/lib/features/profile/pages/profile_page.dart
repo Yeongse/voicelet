@@ -254,25 +254,10 @@ class _ProfileContent extends ConsumerWidget {
           const SizedBox(height: 16),
 
           // フォロー数・フォロワー数
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildFollowCountTile(
-                context: context,
-                ref: ref,
-                label: 'フォロー',
-                count: profile.followingCount,
-                onTap: () => _showFollowListBottomSheet(context, ref, true),
-              ),
-              const SizedBox(width: 32),
-              _buildFollowCountTile(
-                context: context,
-                ref: ref,
-                label: 'フォロワー',
-                count: profile.followersCount,
-                onTap: () => _showFollowListBottomSheet(context, ref, false),
-              ),
-            ],
+          _FollowCountRow(
+            profile: profile,
+            onFollowingTap: () => _showFollowListBottomSheet(context, ref, true),
+            onFollowersTap: () => _showFollowListBottomSheet(context, ref, false),
           ),
           const SizedBox(height: 24),
 
@@ -332,38 +317,6 @@ class _ProfileContent extends ConsumerWidget {
               value: profile.birthMonth!,
             ),
           ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFollowCountTile({
-    required BuildContext context,
-    required WidgetRef ref,
-    required String label,
-    required int count,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Text(
-            '$count',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.textSecondary,
-            ),
-          ),
         ],
       ),
     );
@@ -558,10 +511,22 @@ class _FollowListBottomSheetState extends ConsumerState<_FollowListBottomSheet>
 
   Widget _buildFollowingList() {
     final asyncValue = ref.watch(followingListProvider((userId: widget.userId, page: 1)));
+    // ローカルキャッシュを監視（楽観的更新用）
+    final cachedList = ref.watch(followingListCacheProvider)[widget.userId];
 
     return asyncValue.when(
       data: (response) {
-        if (response.data.isEmpty) {
+        // キャッシュがなければAPIレスポンスをキャッシュに保存
+        if (cachedList == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ref.read(followingListCacheProvider.notifier).setList(widget.userId, response.data);
+          });
+        }
+
+        // キャッシュがあればキャッシュを優先、なければAPIレスポンスを使用
+        final displayList = cachedList ?? response.data;
+
+        if (displayList.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -579,13 +544,15 @@ class _FollowListBottomSheetState extends ConsumerState<_FollowListBottomSheet>
 
         return RefreshIndicator(
           onRefresh: () async {
+            // キャッシュをクリアして再取得
+            ref.read(followingListCacheProvider.notifier).clear(widget.userId);
             ref.invalidate(followingListProvider((userId: widget.userId, page: 1)));
           },
           child: ListView.builder(
             controller: widget.scrollController,
-            itemCount: response.data.length,
+            itemCount: displayList.length,
             itemBuilder: (context, index) {
-              final user = response.data[index];
+              final user = displayList[index];
               return UserListTile(
                 user: user,
                 onTap: () {
@@ -606,10 +573,22 @@ class _FollowListBottomSheetState extends ConsumerState<_FollowListBottomSheet>
 
   Widget _buildFollowersList() {
     final asyncValue = ref.watch(followersListProvider((userId: widget.userId, page: 1)));
+    // ローカルキャッシュを監視（楽観的更新用）
+    final cachedList = ref.watch(followersListCacheProvider)[widget.userId];
 
     return asyncValue.when(
       data: (response) {
-        if (response.data.isEmpty) {
+        // キャッシュがなければAPIレスポンスをキャッシュに保存
+        if (cachedList == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ref.read(followersListCacheProvider.notifier).setList(widget.userId, response.data);
+          });
+        }
+
+        // キャッシュがあればキャッシュを優先、なければAPIレスポンスを使用
+        final displayList = cachedList ?? response.data;
+
+        if (displayList.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -627,13 +606,15 @@ class _FollowListBottomSheetState extends ConsumerState<_FollowListBottomSheet>
 
         return RefreshIndicator(
           onRefresh: () async {
+            // キャッシュをクリアして再取得
+            ref.read(followersListCacheProvider.notifier).clear(widget.userId);
             ref.invalidate(followersListProvider((userId: widget.userId, page: 1)));
           },
           child: ListView.builder(
             controller: widget.scrollController,
-            itemCount: response.data.length,
+            itemCount: displayList.length,
             itemBuilder: (context, index) {
-              final user = response.data[index];
+              final user = displayList[index];
               return UserListTile(
                 user: user,
                 onTap: () {
@@ -694,6 +675,76 @@ class _FollowListBottomSheetState extends ConsumerState<_FollowListBottomSheet>
               foregroundColor: Colors.white,
             ),
             child: const Text('再試行'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// フォロー数・フォロワー数の行（楽観的更新対応）
+class _FollowCountRow extends ConsumerWidget {
+  final Profile profile;
+  final VoidCallback onFollowingTap;
+  final VoidCallback onFollowersTap;
+
+  const _FollowCountRow({
+    required this.profile,
+    required this.onFollowingTap,
+    required this.onFollowersTap,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // 楽観的更新の調整値を取得
+    final deltas = ref.watch(followCountDeltaProvider);
+    final delta = deltas[profile.id] ?? (followingDelta: 0, followersDelta: 0);
+
+    final adjustedFollowingCount = profile.followingCount + delta.followingDelta;
+    final adjustedFollowersCount = profile.followersCount + delta.followersDelta;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildCountTile(
+          label: 'フォロー',
+          count: adjustedFollowingCount < 0 ? 0 : adjustedFollowingCount,
+          onTap: onFollowingTap,
+        ),
+        const SizedBox(width: 32),
+        _buildCountTile(
+          label: 'フォロワー',
+          count: adjustedFollowersCount < 0 ? 0 : adjustedFollowersCount,
+          onTap: onFollowersTap,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCountTile({
+    required String label,
+    required int count,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Text(
+            '$count',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.textSecondary,
+            ),
           ),
         ],
       ),

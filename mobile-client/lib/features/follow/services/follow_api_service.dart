@@ -23,12 +23,18 @@ class FollowApiService {
 
   /// アンフォロー
   Future<void> unfollow(String userId) async {
-    await _dio.delete('/api/follows/$userId');
+    await _dio.delete(
+      '/api/follows/$userId',
+      options: Options(contentType: null),
+    );
   }
 
   /// フォロワー削除
   Future<void> removeFollower(String userId) async {
-    await _dio.delete('/api/followers/$userId');
+    await _dio.delete(
+      '/api/followers/$userId',
+      options: Options(contentType: null),
+    );
   }
 
   /// フォロー中ユーザー一覧取得
@@ -95,7 +101,7 @@ class FollowApiService {
   Future<void> cancelRequest(String requestId) async {
     await _dio.delete(
       '/api/follow-requests/$requestId',
-      data: <String, dynamic>{},
+      options: Options(contentType: null),
     );
   }
 }

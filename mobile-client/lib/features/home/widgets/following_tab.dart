@@ -17,15 +17,21 @@ class FollowingTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final storiesAsync = ref.watch(storiesProvider);
+    final viewedUserIds = ref.watch(viewedUserIdsProvider);
+    final viewedStoryIds = ref.watch(viewedStoryIdsProvider);
 
     return storiesAsync.when(
-      data: (stories) => _buildContent(stories),
+      data: (stories) => _buildContent(stories, viewedUserIds, viewedStoryIds),
       loading: () => _buildLoading(),
       error: (error, _) => _buildError(error),
     );
   }
 
-  Widget _buildContent(List<UserStory> stories) {
+  Widget _buildContent(
+    List<UserStory> stories,
+    Set<String> viewedUserIds,
+    Set<String> viewedStoryIds,
+  ) {
     if (stories.isEmpty) {
       return _buildEmptyState();
     }
@@ -41,10 +47,17 @@ class FollowingTab extends ConsumerWidget {
       itemCount: stories.length,
       itemBuilder: (context, index) {
         final story = stories[index];
+        // ユーザーが全投稿視聴済みとしてマークされているか確認
+        final isFullyViewedInSession = viewedUserIds.contains(story.user.id);
+        // 個別のストーリー視聴状態も考慮して未視聴があるか確認
+        // (サーバーからのisViewedフラグ + セッション中に視聴したストーリー)
+        final hasUnviewedStories = story.stories.any((s) =>
+            !s.isViewed && !viewedStoryIds.contains(s.id));
+        final hasUnviewed = hasUnviewedStories && !isFullyViewedInSession;
         return StoryAvatar(
           avatarUrl: story.user.avatarUrl,
           name: story.user.name,
-          hasUnviewed: story.hasUnviewed,
+          hasUnviewed: hasUnviewed,
           size: 64,
           onTap: () => onStoryTap?.call(story),
         );
@@ -99,14 +112,14 @@ class FollowingTab extends ConsumerWidget {
           Icon(
             Icons.people_outline_rounded,
             size: 64,
-            color: AppTheme.textTertiary.withValues(alpha: 0.5),
+            color: AppTheme.textPrimary.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
             'フォロー中のユーザーの投稿がありません',
             style: TextStyle(
               fontSize: 14,
-              color: AppTheme.textTertiary,
+              color: AppTheme.textPrimary.withValues(alpha: 0.85),
             ),
           ),
           const SizedBox(height: 8),
@@ -114,7 +127,7 @@ class FollowingTab extends ConsumerWidget {
             'おすすめタブからユーザーをフォローしてみましょう',
             style: TextStyle(
               fontSize: 12,
-              color: AppTheme.textTertiary.withValues(alpha: 0.7),
+              color: AppTheme.textPrimary.withValues(alpha: 0.7),
             ),
           ),
         ],

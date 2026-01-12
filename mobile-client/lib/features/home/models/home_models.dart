@@ -10,7 +10,7 @@ class StoryItem with _$StoryItem {
     required String id,
     required int duration,
     required String createdAt,
-    required bool isViewed,
+    @Default(false) bool isViewed,
   }) = _StoryItem;
 
   factory StoryItem.fromJson(Map<String, dynamic> json) =>
@@ -36,7 +36,7 @@ class UserStory with _$UserStory {
   const factory UserStory({
     required StoryUser user,
     required List<StoryItem> stories,
-    required bool hasUnviewed,
+    @Default(true) bool hasUnviewed,
   }) = _UserStory;
 
   factory UserStory.fromJson(Map<String, dynamic> json) =>
@@ -60,9 +60,11 @@ class DiscoverUser with _$DiscoverUser {
   const factory DiscoverUser({
     required String id,
     required String name,
+    String? bio,
     String? avatarUrl,
     required int whisperCount,
     required String latestWhisperAt,
+    @Default(true) bool hasUnviewed,
   }) = _DiscoverUser;
 
   factory DiscoverUser.fromJson(Map<String, dynamic> json) =>
@@ -103,6 +105,7 @@ class DiscoverStoriesResponse with _$DiscoverStoriesResponse {
   const factory DiscoverStoriesResponse({
     StoryUser? user,
     required List<StoryItem> stories,
+    @Default(true) bool hasUnviewed,
   }) = _DiscoverStoriesResponse;
 
   factory DiscoverStoriesResponse.fromJson(Map<String, dynamic> json) =>

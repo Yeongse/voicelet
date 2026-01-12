@@ -34,6 +34,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
 
   bool _isTransitioning = false;
   bool _showAuthButtons = false;
+  bool _hasInvalidatedProvider = false;
 
   @override
   void initState() {
@@ -147,8 +148,25 @@ class _SplashPageState extends ConsumerState<SplashPage>
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AsyncValue<SplashResult>>(splashInitProvider, (previous, next) {
-      next.whenData((result) {
+    // スプラッシュ画面が表示されるたびに認証状態を再確認
+    // （ログアウト後に戻ってきた場合などに対応）
+    if (!_hasInvalidatedProvider) {
+      _hasInvalidatedProvider = true;
+      // 初回build時にプロバイダーを再実行させる
+      ref.invalidate(splashInitProvider);
+    }
+    final splashState = ref.watch(splashInitProvider);
+
+    // 状態が確定したら処理を実行
+    splashState.whenData((result) {
+      // 既に遷移中の場合は何もしない
+      if (_isTransitioning) return;
+
+      // WidgetsBinding.addPostFrameCallbackで次のフレームで実行
+      // buildメソッド内での状態変更を避けるため
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _isTransitioning) return;
+
         switch (result) {
           case SplashSuccess():
             _navigateTo('/home');
@@ -157,11 +175,11 @@ class _SplashPageState extends ConsumerState<SplashPage>
             _navigateTo('/auth/onboarding');
           case SplashUnauthenticated():
             // 未認証時はボタンを表示
-            _showButtons();
+            if (!_showAuthButtons) _showButtons();
           case SplashTimeout():
           case SplashNetworkError():
             // エラー時もボタンを表示
-            _showButtons();
+            if (!_showAuthButtons) _showButtons();
         }
       });
     });

@@ -13,20 +13,23 @@ final followingStateProvider =
 class DiscoverTab extends ConsumerWidget {
   final void Function(DiscoverUser user)? onUserStoryTap;
   final void Function(DiscoverUser user)? onFollowTap;
+  final void Function(DiscoverUser user)? onUserProfileTap;
 
   const DiscoverTab({
     super.key,
     this.onUserStoryTap,
     this.onFollowTap,
+    this.onUserProfileTap,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final discoverAsync = ref.watch(discoverProvider);
     final followingSet = ref.watch(followingStateProvider);
+    final viewedUserIds = ref.watch(viewedUserIdsProvider);
 
     return discoverAsync.when(
-      data: (users) => _buildContent(users, followingSet, ref),
+      data: (users) => _buildContent(users, followingSet, viewedUserIds, ref),
       loading: () => _buildLoading(),
       error: (error, _) => _buildError(error),
     );
@@ -35,6 +38,7 @@ class DiscoverTab extends ConsumerWidget {
   Widget _buildContent(
     List<DiscoverUser> users,
     Set<String> followingSet,
+    Set<String> viewedUserIds,
     WidgetRef ref,
   ) {
     if (users.isEmpty) {
@@ -47,11 +51,16 @@ class DiscoverTab extends ConsumerWidget {
       itemBuilder: (context, index) {
         final user = users[index];
         final isFollowing = followingSet.contains(user.id);
+        // サーバーからのhasUnviewedを使用し、セッション中の変更も反映
+        final isFullyViewedInSession = viewedUserIds.contains(user.id);
+        final isViewed = !user.hasUnviewed || isFullyViewedInSession;
 
         return DiscoverCard(
           user: user,
           isFollowing: isFollowing,
+          isViewed: isViewed,
           onAvatarTap: () => onUserStoryTap?.call(user),
+          onCardTap: () => onUserProfileTap?.call(user),
           onFollowTap: () {
             // 楽観的更新
             if (isFollowing) {

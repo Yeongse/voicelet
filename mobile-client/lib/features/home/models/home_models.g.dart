@@ -11,7 +11,7 @@ _$StoryItemImpl _$$StoryItemImplFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String,
       duration: (json['duration'] as num).toInt(),
       createdAt: json['createdAt'] as String,
-      isViewed: json['isViewed'] as bool,
+      isViewed: json['isViewed'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$$StoryItemImplToJson(_$StoryItemImpl instance) =>
@@ -42,7 +42,7 @@ _$UserStoryImpl _$$UserStoryImplFromJson(Map<String, dynamic> json) =>
       stories: (json['stories'] as List<dynamic>)
           .map((e) => StoryItem.fromJson(e as Map<String, dynamic>))
           .toList(),
-      hasUnviewed: json['hasUnviewed'] as bool,
+      hasUnviewed: json['hasUnviewed'] as bool? ?? true,
     );
 
 Map<String, dynamic> _$$UserStoryImplToJson(_$UserStoryImpl instance) =>
@@ -68,18 +68,22 @@ _$DiscoverUserImpl _$$DiscoverUserImplFromJson(Map<String, dynamic> json) =>
     _$DiscoverUserImpl(
       id: json['id'] as String,
       name: json['name'] as String,
+      bio: json['bio'] as String?,
       avatarUrl: json['avatarUrl'] as String?,
       whisperCount: (json['whisperCount'] as num).toInt(),
       latestWhisperAt: json['latestWhisperAt'] as String,
+      hasUnviewed: json['hasUnviewed'] as bool? ?? true,
     );
 
 Map<String, dynamic> _$$DiscoverUserImplToJson(_$DiscoverUserImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
+      'bio': instance.bio,
       'avatarUrl': instance.avatarUrl,
       'whisperCount': instance.whisperCount,
       'latestWhisperAt': instance.latestWhisperAt,
+      'hasUnviewed': instance.hasUnviewed,
     };
 
 _$PaginationImpl _$$PaginationImplFromJson(Map<String, dynamic> json) =>
@@ -127,11 +131,16 @@ _$DiscoverStoriesResponseImpl _$$DiscoverStoriesResponseImplFromJson(
   stories: (json['stories'] as List<dynamic>)
       .map((e) => StoryItem.fromJson(e as Map<String, dynamic>))
       .toList(),
+  hasUnviewed: json['hasUnviewed'] as bool? ?? true,
 );
 
 Map<String, dynamic> _$$DiscoverStoriesResponseImplToJson(
   _$DiscoverStoriesResponseImpl instance,
-) => <String, dynamic>{'user': instance.user, 'stories': instance.stories};
+) => <String, dynamic>{
+  'user': instance.user,
+  'stories': instance.stories,
+  'hasUnviewed': instance.hasUnviewed,
+};
 
 _$MyWhisperImpl _$$MyWhisperImplFromJson(Map<String, dynamic> json) =>
     _$MyWhisperImpl(

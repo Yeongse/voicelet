@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../models/follow_models.dart';
 import '../providers/follow_provider.dart';
 
@@ -58,12 +59,14 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
     try {
       final notifier = ref.read(userFollowStatusProvider.notifier);
 
+      final currentUserId = ref.read(currentUserIdProvider);
+
       switch (_status) {
         case FollowStatus.none:
           await notifier.follow(widget.userId);
           break;
         case FollowStatus.following:
-          await notifier.unfollow(widget.userId);
+          await notifier.unfollow(widget.userId, currentUserId: currentUserId);
           break;
         case FollowStatus.requested:
           if (_requestId != null) {

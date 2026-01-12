@@ -79,7 +79,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
       final profileService = ProfileApiService();
 
       // プロフィールを新規登録（POST）してユーザーをDBに永続化
-      final profile = await profileService.registerProfile(
+      var profile = await profileService.registerProfile(
         name: _nameController.text.trim(),
         bio: _bioController.text.trim().isEmpty
             ? null
@@ -128,8 +128,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
             contentType: contentType,
           );
 
-          // プロフィールを更新してavatarPathを保存
-          await profileService.updateProfile(
+          // プロフィールを更新してavatarPathを保存し、更新後のプロフィールを取得
+          profile = await profileService.updateProfile(
             avatarPath: urlData['avatarPath'],
           );
         } catch (e) {
@@ -138,7 +138,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
         }
       }
 
-      // 認証状態を更新
+      // 認証状態を更新（アバターを含む最新のプロフィールを使用）
       await ref.read(authProvider.notifier).completeOnboarding(profile);
 
       if (mounted) {

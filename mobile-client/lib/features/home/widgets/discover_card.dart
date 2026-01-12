@@ -6,15 +6,19 @@ import '../models/home_models.dart';
 class DiscoverCard extends StatelessWidget {
   final DiscoverUser user;
   final bool isFollowing;
+  final bool isViewed;
   final VoidCallback? onAvatarTap;
   final VoidCallback? onFollowTap;
+  final VoidCallback? onCardTap;
 
   const DiscoverCard({
     super.key,
     required this.user,
     this.isFollowing = false,
+    this.isViewed = false,
     this.onAvatarTap,
     this.onFollowTap,
+    this.onCardTap,
   });
 
   @override
@@ -39,7 +43,14 @@ class DiscoverCard extends StatelessWidget {
               height: 56,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: AppTheme.gradientAccent,
+                // 視聴済みの場合はグレーボーダー、未視聴はグラデーション
+                gradient: isViewed ? null : AppTheme.gradientAccent,
+                border: isViewed
+                    ? Border.all(
+                        color: AppTheme.textTertiary.withValues(alpha: 0.5),
+                        width: 2.5,
+                      )
+                    : null,
               ),
               padding: const EdgeInsets.all(2.5),
               child: Container(
@@ -62,40 +73,58 @@ class DiscoverCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
 
-          // ユーザー情報
+          // ユーザー情報（タップでプロフィール詳細へ）
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user.name,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.graphic_eq_rounded,
-                      size: 14,
-                      color: AppTheme.textTertiary,
+            child: GestureDetector(
+              onTap: onCardTap,
+              behavior: HitTestBehavior.opaque,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user.name,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
                     ),
-                    const SizedBox(width: 4),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (user.bio != null && user.bio!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
                     Text(
-                      '${user.whisperCount}件の投稿',
+                      user.bio!.length > 30
+                          ? '${user.bio!.substring(0, 30)}...'
+                          : user.bio!,
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppTheme.textTertiary,
+                        color: AppTheme.textSecondary,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.graphic_eq_rounded,
+                        size: 14,
+                        color: AppTheme.textTertiary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${user.whisperCount}件の投稿',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.textTertiary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
 

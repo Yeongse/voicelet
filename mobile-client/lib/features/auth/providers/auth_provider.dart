@@ -5,8 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/api/api_client.dart';
 import '../models/profile.dart';
-import '../../splash/providers/splash_init_provider.dart';
-import '../../profile/providers/profile_provider.dart';
+import '../../home/providers/home_providers.dart';
 
 /// 認証状態
 sealed class AuthState {
@@ -281,10 +280,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
       await _supabase.auth.signOut();
       state = const AuthStateUnauthenticated();
-      // プロフィールキャッシュをクリア
-      _ref.invalidate(myProfileProvider);
-      // スプラッシュプロバイダーを無効化して再初期化を強制
-      _ref.invalidate(splashInitProvider);
+      // セッション中の視聴状態をクリア（StateProviderはAPIリクエストを発火しない）
+      _ref.read(viewedStoryIdsProvider.notifier).state = {};
+      _ref.read(viewedUserIdsProvider.notifier).state = {};
+      // 注意: FutureProvider（myProfileProvider, storiesProvider, discoverProvider）は
+      // invalidateするとAPIリクエストが発火して認証エラーになるため、ここではinvalidateしない。
+      // 次回ログイン時にcurrentUserIdProviderが変わることで自動的に再取得される。
     } catch (e) {
       state = AuthStateError(message: 'ログアウトに失敗しました');
     }

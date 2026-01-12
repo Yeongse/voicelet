@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 import '../../../core/api/api_client.dart';
 import '../models/home_models.dart';
 
@@ -51,23 +53,21 @@ class HomeApiService {
 
   /// フォロー
   Future<void> follow({
-    required String followerId,
     required String followingId,
   }) async {
     await _apiClient.dio.post(
       '/api/follows',
-      data: {'followerId': followerId, 'followingId': followingId},
+      data: {'followingId': followingId},
     );
   }
 
   /// アンフォロー
   Future<void> unfollow({
-    required String followerId,
     required String followingId,
   }) async {
     await _apiClient.dio.delete(
-      '/api/follows',
-      data: {'followerId': followerId, 'followingId': followingId},
+      '/api/follows/$followingId',
+      options: Options(contentType: null),
     );
   }
 

@@ -149,7 +149,7 @@ class _$StoryItemImpl implements _StoryItem {
     required this.id,
     required this.duration,
     required this.createdAt,
-    required this.isViewed,
+    this.isViewed = false,
   });
 
   factory _$StoryItemImpl.fromJson(Map<String, dynamic> json) =>
@@ -162,6 +162,7 @@ class _$StoryItemImpl implements _StoryItem {
   @override
   final String createdAt;
   @override
+  @JsonKey()
   final bool isViewed;
 
   @override
@@ -207,7 +208,7 @@ abstract class _StoryItem implements StoryItem {
     required final String id,
     required final int duration,
     required final String createdAt,
-    required final bool isViewed,
+    final bool isViewed,
   }) = _$StoryItemImpl;
 
   factory _StoryItem.fromJson(Map<String, dynamic> json) =
@@ -557,7 +558,7 @@ class _$UserStoryImpl implements _UserStory {
   const _$UserStoryImpl({
     required this.user,
     required final List<StoryItem> stories,
-    required this.hasUnviewed,
+    this.hasUnviewed = true,
   }) : _stories = stories;
 
   factory _$UserStoryImpl.fromJson(Map<String, dynamic> json) =>
@@ -574,6 +575,7 @@ class _$UserStoryImpl implements _UserStory {
   }
 
   @override
+  @JsonKey()
   final bool hasUnviewed;
 
   @override
@@ -619,7 +621,7 @@ abstract class _UserStory implements UserStory {
   const factory _UserStory({
     required final StoryUser user,
     required final List<StoryItem> stories,
-    required final bool hasUnviewed,
+    final bool hasUnviewed,
   }) = _$UserStoryImpl;
 
   factory _UserStory.fromJson(Map<String, dynamic> json) =
@@ -810,9 +812,11 @@ DiscoverUser _$DiscoverUserFromJson(Map<String, dynamic> json) {
 mixin _$DiscoverUser {
   String get id => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
+  String? get bio => throw _privateConstructorUsedError;
   String? get avatarUrl => throw _privateConstructorUsedError;
   int get whisperCount => throw _privateConstructorUsedError;
   String get latestWhisperAt => throw _privateConstructorUsedError;
+  bool get hasUnviewed => throw _privateConstructorUsedError;
 
   /// Serializes this DiscoverUser to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -834,9 +838,11 @@ abstract class $DiscoverUserCopyWith<$Res> {
   $Res call({
     String id,
     String name,
+    String? bio,
     String? avatarUrl,
     int whisperCount,
     String latestWhisperAt,
+    bool hasUnviewed,
   });
 }
 
@@ -857,9 +863,11 @@ class _$DiscoverUserCopyWithImpl<$Res, $Val extends DiscoverUser>
   $Res call({
     Object? id = null,
     Object? name = null,
+    Object? bio = freezed,
     Object? avatarUrl = freezed,
     Object? whisperCount = null,
     Object? latestWhisperAt = null,
+    Object? hasUnviewed = null,
   }) {
     return _then(
       _value.copyWith(
@@ -871,6 +879,10 @@ class _$DiscoverUserCopyWithImpl<$Res, $Val extends DiscoverUser>
                 ? _value.name
                 : name // ignore: cast_nullable_to_non_nullable
                       as String,
+            bio: freezed == bio
+                ? _value.bio
+                : bio // ignore: cast_nullable_to_non_nullable
+                      as String?,
             avatarUrl: freezed == avatarUrl
                 ? _value.avatarUrl
                 : avatarUrl // ignore: cast_nullable_to_non_nullable
@@ -883,6 +895,10 @@ class _$DiscoverUserCopyWithImpl<$Res, $Val extends DiscoverUser>
                 ? _value.latestWhisperAt
                 : latestWhisperAt // ignore: cast_nullable_to_non_nullable
                       as String,
+            hasUnviewed: null == hasUnviewed
+                ? _value.hasUnviewed
+                : hasUnviewed // ignore: cast_nullable_to_non_nullable
+                      as bool,
           )
           as $Val,
     );
@@ -901,9 +917,11 @@ abstract class _$$DiscoverUserImplCopyWith<$Res>
   $Res call({
     String id,
     String name,
+    String? bio,
     String? avatarUrl,
     int whisperCount,
     String latestWhisperAt,
+    bool hasUnviewed,
   });
 }
 
@@ -923,9 +941,11 @@ class __$$DiscoverUserImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? name = null,
+    Object? bio = freezed,
     Object? avatarUrl = freezed,
     Object? whisperCount = null,
     Object? latestWhisperAt = null,
+    Object? hasUnviewed = null,
   }) {
     return _then(
       _$DiscoverUserImpl(
@@ -937,6 +957,10 @@ class __$$DiscoverUserImplCopyWithImpl<$Res>
             ? _value.name
             : name // ignore: cast_nullable_to_non_nullable
                   as String,
+        bio: freezed == bio
+            ? _value.bio
+            : bio // ignore: cast_nullable_to_non_nullable
+                  as String?,
         avatarUrl: freezed == avatarUrl
             ? _value.avatarUrl
             : avatarUrl // ignore: cast_nullable_to_non_nullable
@@ -949,6 +973,10 @@ class __$$DiscoverUserImplCopyWithImpl<$Res>
             ? _value.latestWhisperAt
             : latestWhisperAt // ignore: cast_nullable_to_non_nullable
                   as String,
+        hasUnviewed: null == hasUnviewed
+            ? _value.hasUnviewed
+            : hasUnviewed // ignore: cast_nullable_to_non_nullable
+                  as bool,
       ),
     );
   }
@@ -960,9 +988,11 @@ class _$DiscoverUserImpl implements _DiscoverUser {
   const _$DiscoverUserImpl({
     required this.id,
     required this.name,
+    this.bio,
     this.avatarUrl,
     required this.whisperCount,
     required this.latestWhisperAt,
+    this.hasUnviewed = true,
   });
 
   factory _$DiscoverUserImpl.fromJson(Map<String, dynamic> json) =>
@@ -973,15 +1003,20 @@ class _$DiscoverUserImpl implements _DiscoverUser {
   @override
   final String name;
   @override
+  final String? bio;
+  @override
   final String? avatarUrl;
   @override
   final int whisperCount;
   @override
   final String latestWhisperAt;
+  @override
+  @JsonKey()
+  final bool hasUnviewed;
 
   @override
   String toString() {
-    return 'DiscoverUser(id: $id, name: $name, avatarUrl: $avatarUrl, whisperCount: $whisperCount, latestWhisperAt: $latestWhisperAt)';
+    return 'DiscoverUser(id: $id, name: $name, bio: $bio, avatarUrl: $avatarUrl, whisperCount: $whisperCount, latestWhisperAt: $latestWhisperAt, hasUnviewed: $hasUnviewed)';
   }
 
   @override
@@ -991,12 +1026,15 @@ class _$DiscoverUserImpl implements _DiscoverUser {
             other is _$DiscoverUserImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
+            (identical(other.bio, bio) || other.bio == bio) &&
             (identical(other.avatarUrl, avatarUrl) ||
                 other.avatarUrl == avatarUrl) &&
             (identical(other.whisperCount, whisperCount) ||
                 other.whisperCount == whisperCount) &&
             (identical(other.latestWhisperAt, latestWhisperAt) ||
-                other.latestWhisperAt == latestWhisperAt));
+                other.latestWhisperAt == latestWhisperAt) &&
+            (identical(other.hasUnviewed, hasUnviewed) ||
+                other.hasUnviewed == hasUnviewed));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1005,9 +1043,11 @@ class _$DiscoverUserImpl implements _DiscoverUser {
     runtimeType,
     id,
     name,
+    bio,
     avatarUrl,
     whisperCount,
     latestWhisperAt,
+    hasUnviewed,
   );
 
   /// Create a copy of DiscoverUser
@@ -1028,9 +1068,11 @@ abstract class _DiscoverUser implements DiscoverUser {
   const factory _DiscoverUser({
     required final String id,
     required final String name,
+    final String? bio,
     final String? avatarUrl,
     required final int whisperCount,
     required final String latestWhisperAt,
+    final bool hasUnviewed,
   }) = _$DiscoverUserImpl;
 
   factory _DiscoverUser.fromJson(Map<String, dynamic> json) =
@@ -1041,11 +1083,15 @@ abstract class _DiscoverUser implements DiscoverUser {
   @override
   String get name;
   @override
+  String? get bio;
+  @override
   String? get avatarUrl;
   @override
   int get whisperCount;
   @override
   String get latestWhisperAt;
+  @override
+  bool get hasUnviewed;
 
   /// Create a copy of DiscoverUser
   /// with the given fields replaced by the non-null parameter values.
@@ -1537,6 +1583,7 @@ DiscoverStoriesResponse _$DiscoverStoriesResponseFromJson(
 mixin _$DiscoverStoriesResponse {
   StoryUser? get user => throw _privateConstructorUsedError;
   List<StoryItem> get stories => throw _privateConstructorUsedError;
+  bool get hasUnviewed => throw _privateConstructorUsedError;
 
   /// Serializes this DiscoverStoriesResponse to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -1555,7 +1602,7 @@ abstract class $DiscoverStoriesResponseCopyWith<$Res> {
     $Res Function(DiscoverStoriesResponse) then,
   ) = _$DiscoverStoriesResponseCopyWithImpl<$Res, DiscoverStoriesResponse>;
   @useResult
-  $Res call({StoryUser? user, List<StoryItem> stories});
+  $Res call({StoryUser? user, List<StoryItem> stories, bool hasUnviewed});
 
   $StoryUserCopyWith<$Res>? get user;
 }
@@ -1577,7 +1624,11 @@ class _$DiscoverStoriesResponseCopyWithImpl<
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? user = freezed, Object? stories = null}) {
+  $Res call({
+    Object? user = freezed,
+    Object? stories = null,
+    Object? hasUnviewed = null,
+  }) {
     return _then(
       _value.copyWith(
             user: freezed == user
@@ -1588,6 +1639,10 @@ class _$DiscoverStoriesResponseCopyWithImpl<
                 ? _value.stories
                 : stories // ignore: cast_nullable_to_non_nullable
                       as List<StoryItem>,
+            hasUnviewed: null == hasUnviewed
+                ? _value.hasUnviewed
+                : hasUnviewed // ignore: cast_nullable_to_non_nullable
+                      as bool,
           )
           as $Val,
     );
@@ -1617,7 +1672,7 @@ abstract class _$$DiscoverStoriesResponseImplCopyWith<$Res>
   ) = __$$DiscoverStoriesResponseImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({StoryUser? user, List<StoryItem> stories});
+  $Res call({StoryUser? user, List<StoryItem> stories, bool hasUnviewed});
 
   @override
   $StoryUserCopyWith<$Res>? get user;
@@ -1640,7 +1695,11 @@ class __$$DiscoverStoriesResponseImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? user = freezed, Object? stories = null}) {
+  $Res call({
+    Object? user = freezed,
+    Object? stories = null,
+    Object? hasUnviewed = null,
+  }) {
     return _then(
       _$DiscoverStoriesResponseImpl(
         user: freezed == user
@@ -1651,6 +1710,10 @@ class __$$DiscoverStoriesResponseImplCopyWithImpl<$Res>
             ? _value._stories
             : stories // ignore: cast_nullable_to_non_nullable
                   as List<StoryItem>,
+        hasUnviewed: null == hasUnviewed
+            ? _value.hasUnviewed
+            : hasUnviewed // ignore: cast_nullable_to_non_nullable
+                  as bool,
       ),
     );
   }
@@ -1662,6 +1725,7 @@ class _$DiscoverStoriesResponseImpl implements _DiscoverStoriesResponse {
   const _$DiscoverStoriesResponseImpl({
     this.user,
     required final List<StoryItem> stories,
+    this.hasUnviewed = true,
   }) : _stories = stories;
 
   factory _$DiscoverStoriesResponseImpl.fromJson(Map<String, dynamic> json) =>
@@ -1678,8 +1742,12 @@ class _$DiscoverStoriesResponseImpl implements _DiscoverStoriesResponse {
   }
 
   @override
+  @JsonKey()
+  final bool hasUnviewed;
+
+  @override
   String toString() {
-    return 'DiscoverStoriesResponse(user: $user, stories: $stories)';
+    return 'DiscoverStoriesResponse(user: $user, stories: $stories, hasUnviewed: $hasUnviewed)';
   }
 
   @override
@@ -1688,7 +1756,9 @@ class _$DiscoverStoriesResponseImpl implements _DiscoverStoriesResponse {
         (other.runtimeType == runtimeType &&
             other is _$DiscoverStoriesResponseImpl &&
             (identical(other.user, user) || other.user == user) &&
-            const DeepCollectionEquality().equals(other._stories, _stories));
+            const DeepCollectionEquality().equals(other._stories, _stories) &&
+            (identical(other.hasUnviewed, hasUnviewed) ||
+                other.hasUnviewed == hasUnviewed));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1697,6 +1767,7 @@ class _$DiscoverStoriesResponseImpl implements _DiscoverStoriesResponse {
     runtimeType,
     user,
     const DeepCollectionEquality().hash(_stories),
+    hasUnviewed,
   );
 
   /// Create a copy of DiscoverStoriesResponse
@@ -1720,6 +1791,7 @@ abstract class _DiscoverStoriesResponse implements DiscoverStoriesResponse {
   const factory _DiscoverStoriesResponse({
     final StoryUser? user,
     required final List<StoryItem> stories,
+    final bool hasUnviewed,
   }) = _$DiscoverStoriesResponseImpl;
 
   factory _DiscoverStoriesResponse.fromJson(Map<String, dynamic> json) =
@@ -1729,6 +1801,8 @@ abstract class _DiscoverStoriesResponse implements DiscoverStoriesResponse {
   StoryUser? get user;
   @override
   List<StoryItem> get stories;
+  @override
+  bool get hasUnviewed;
 
   /// Create a copy of DiscoverStoriesResponse
   /// with the given fields replaced by the non-null parameter values.

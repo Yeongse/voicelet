@@ -14,9 +14,11 @@ export const discoverQuerySchema = z.object({
 export const discoverUserSchema = z.object({
   id: z.string(),
   name: z.string(),
+  bio: z.string().nullable(),
   avatarUrl: z.string().nullable(),
   whisperCount: z.number(),
   latestWhisperAt: z.string(),
+  hasUnviewed: z.boolean(),
 })
 
 export const discoverResponseSchema = z.object({

@@ -8,7 +8,6 @@ import '../widgets/my_story_section.dart';
 import '../widgets/following_tab.dart';
 import '../widgets/discover_tab.dart';
 import '../widgets/profile_drawer.dart';
-import '../../auth/providers/auth_provider.dart';
 
 /// ホーム画面
 class HomePage extends ConsumerStatefulWidget {
@@ -44,7 +43,57 @@ class _HomePageState extends ConsumerState<HomePage>
   }
 
   void _navigateToStoryViewer(UserStory story) {
+    // セッション中に視聴したストーリーIDを取得
+    final viewedStoryIds = ref.read(viewedStoryIdsProvider);
+    final viewedUserIds = ref.read(viewedUserIdsProvider);
+
+    // ユーザーが全投稿視聴済みとしてマークされているか確認
+    if (viewedUserIds.contains(story.user.id)) {
+      _showAlreadyViewedToast();
+      return;
+    }
+
+    // 未視聴のストーリーが残っているか確認
+    // (サーバーからのisViewedフラグ + セッション中に視聴したストーリー)
+    final hasUnviewed = story.stories.any((s) =>
+        !s.isViewed && !viewedStoryIds.contains(s.id));
+
+    if (!hasUnviewed) {
+      _showAlreadyViewedToast();
+      return;
+    }
     context.push('/story-viewer', extra: {'story': story});
+  }
+
+  void _showAlreadyViewedToast() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              Icons.check_circle_outline_rounded,
+              color: AppTheme.info,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'すべて視聴済みです',
+              style: TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppTheme.bgElevated,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        ),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   void _navigateToMyStoryViewer(List<MyWhisper> whispers, int index) {
@@ -55,6 +104,16 @@ class _HomePageState extends ConsumerState<HomePage>
   }
 
   Future<void> _handleDiscoverUserTap(DiscoverUser user) async {
+    // サーバーからのhasUnviewedとセッション中の状態を確認
+    final viewedUserIds = ref.read(viewedUserIdsProvider);
+    final isFullyViewedInSession = viewedUserIds.contains(user.id);
+    final hasUnviewed = user.hasUnviewed && !isFullyViewedInSession;
+
+    if (!hasUnviewed) {
+      _showAlreadyViewedToast();
+      return;
+    }
+
     // おすすめユーザーのストーリーを取得して再生
     final story = await ref.read(discoverUserStoriesProvider(user.id).future);
     if (story != null && mounted) {
@@ -63,12 +122,9 @@ class _HomePageState extends ConsumerState<HomePage>
   }
 
   Future<void> _handleFollowTap(DiscoverUser user) async {
-    final userId = ref.read(currentUserIdProvider);
-    if (userId == null) return;
-
     final apiService = ref.read(homeApiServiceProvider);
     try {
-      await apiService.follow(followerId: userId, followingId: user.id);
+      await apiService.follow(followingId: user.id);
       // リストを更新
       ref.invalidate(discoverProvider);
       ref.invalidate(storiesProvider);
@@ -82,6 +138,10 @@ class _HomePageState extends ConsumerState<HomePage>
         );
       }
     }
+  }
+
+  void _navigateToUserProfile(DiscoverUser user) {
+    context.push('/users/${user.id}');
   }
 
   @override
@@ -144,6 +204,7 @@ class _HomePageState extends ConsumerState<HomePage>
                       DiscoverTab(
                         onUserStoryTap: _handleDiscoverUserTap,
                         onFollowTap: _handleFollowTap,
+                        onUserProfileTap: _navigateToUserProfile,
                       ),
                     ],
                   ),

@@ -668,10 +668,10 @@ class _PreviewPageState extends ConsumerState<PreviewPage>
 
     if (whisper != null && mounted) {
       _showSuccessSnackBar('投稿しました');
-      // 成功後、録音画面に戻る
+      // 成功後、ホーム画面に戻る
       await Future.delayed(const Duration(milliseconds: 500));
       if (mounted) {
-        context.go('/recording');
+        context.go('/home');
       }
     } else {
       final progress = ref.read(postingProgressProvider);

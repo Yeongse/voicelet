@@ -44,18 +44,28 @@ export default async function (fastify: ServerInstance) {
         where: {
           id: { notIn: [userId, ...followingIds] },
           whispers: {
-            some: { expiresAt: { gt: now } },
+            some: {
+              expiresAt: { gt: now },
+            },
           },
         },
         include: {
           whispers: {
-            where: { expiresAt: { gt: now } },
+            where: {
+              expiresAt: { gt: now },
+            },
+            include: {
+              views: { where: { userId }, select: { id: true } },
+            },
             orderBy: { createdAt: 'desc' },
-            take: 1,
           },
           _count: {
             select: {
-              whispers: { where: { expiresAt: { gt: now } } },
+              whispers: {
+                where: {
+                  expiresAt: { gt: now },
+                },
+              },
             },
           },
         },
@@ -68,13 +78,19 @@ export default async function (fastify: ServerInstance) {
 
       const paginatedUsers = usersWithWhispers.slice(skip, skip + limit)
 
-      const data = paginatedUsers.map((u) => ({
-        id: u.id,
-        name: u.name ?? '',
-        avatarUrl: u.avatarPath,
-        whisperCount: u._count.whispers,
-        latestWhisperAt: u.whispers[0]?.createdAt.toISOString() || '',
-      }))
+      const data = paginatedUsers.map((u) => {
+        // 未視聴のWhisperがあるかチェック
+        const hasUnviewed = u.whispers.some((w) => w.views.length === 0)
+        return {
+          id: u.id,
+          name: u.name ?? '',
+          bio: u.bio,
+          avatarUrl: u.avatarPath,
+          whisperCount: u._count.whispers,
+          latestWhisperAt: u.whispers[0]?.createdAt.toISOString() || '',
+          hasUnviewed,
+        }
+      })
 
       return reply.send({
         data,
@@ -106,6 +122,7 @@ export default async function (fastify: ServerInstance) {
       const { userId } = request.query as { userId: string }
 
       const now = new Date()
+      // 有効なWhisperを取得（視聴済みも含む）
       const whispers = await prisma.whisper.findMany({
         where: {
           userId: targetUserId,
@@ -119,7 +136,19 @@ export default async function (fastify: ServerInstance) {
       })
 
       if (whispers.length === 0) {
-        return reply.send({ user: null, stories: [] })
+        // ユーザー情報を別途取得
+        const targetUser = await prisma.user.findUnique({
+          where: { id: targetUserId },
+          select: { id: true, name: true, avatarPath: true },
+        })
+        const user = targetUser
+          ? {
+              id: targetUser.id,
+              name: targetUser.name ?? '',
+              avatarUrl: targetUser.avatarPath,
+            }
+          : null
+        return reply.send({ user, stories: [], hasUnviewed: false })
       }
 
       const firstUser = whispers[0].user
@@ -134,8 +163,9 @@ export default async function (fastify: ServerInstance) {
         createdAt: w.createdAt.toISOString(),
         isViewed: w.views.length > 0,
       }))
+      const hasUnviewed = whispers.some((w) => w.views.length === 0)
 
-      return reply.send({ user, stories })
+      return reply.send({ user, stories, hasUnviewed })
     },
   )
 }

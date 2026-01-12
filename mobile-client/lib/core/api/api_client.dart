@@ -38,6 +38,11 @@ class ApiClient {
         if (session != null) {
           options.headers['Authorization'] = 'Bearer ${session.accessToken}';
         }
+        // DELETEリクエストでbodyがない場合はContent-Typeを削除
+        // （Fastifyが空のJSONボディを期待してエラーになるのを防ぐ）
+        if (options.method == 'DELETE' && options.data == null) {
+          options.headers.remove('Content-Type');
+        }
         handler.next(options);
       },
       onError: (error, handler) {

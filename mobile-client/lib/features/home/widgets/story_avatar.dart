@@ -67,7 +67,7 @@ class StoryAvatar extends StatelessWidget {
               name,
               style: TextStyle(
                 fontSize: 11,
-                color: AppTheme.textSecondary,
+                color: AppTheme.textPrimary.withValues(alpha: 0.85),
               ),
               textAlign: TextAlign.center,
               maxLines: 1,

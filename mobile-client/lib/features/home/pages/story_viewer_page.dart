@@ -105,18 +105,137 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
     try {
       final story = widget.story.stories[_currentIndex];
       final apiService = ref.read(homeApiServiceProvider);
-      final audioUrl = await apiService.getAudioUrl(whisperId: story.id);
+      final userId = ref.read(currentUserIdProvider);
 
+      // 再生開始前に視聴記録APIを呼び出す（必須）
+      if (userId != null) {
+        try {
+          await apiService.recordView(userId: userId, whisperId: story.id);
+          // 視聴成功時にviewedStoryIdsProviderを更新
+          ref.read(viewedStoryIdsProvider.notifier).update((state) {
+            return {...state, story.id};
+          });
+        } catch (e) {
+          // 409エラー（既に視聴済み）の場合
+          if (e.toString().contains('409')) {
+            // 既に視聴済みの場合もviewedStoryIdsProviderに追加
+            ref.read(viewedStoryIdsProvider.notifier).update((state) {
+              return {...state, story.id};
+            });
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle_outline_rounded,
+                        color: AppTheme.info,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'この投稿は既に視聴済みです',
+                        style: TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: AppTheme.bgElevated,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  ),
+                  margin: const EdgeInsets.all(16),
+                ),
+              );
+              // 次のストーリーに進む、なければ閉じる
+              if (_currentIndex < widget.story.stories.length - 1) {
+                setState(() {
+                  _currentIndex++;
+                  _isLoading = false;
+                });
+                _loadCurrentStory();
+                return;
+              } else {
+                _closeViewer();
+                return;
+              }
+            }
+          }
+          // その他のAPIエラーの場合は再生を中断
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(
+                      Icons.error_outline_rounded,
+                      color: AppTheme.error,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'エラーが発生しました',
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: AppTheme.bgElevated,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                ),
+                margin: const EdgeInsets.all(16),
+              ),
+            );
+            setState(() {
+              _isLoading = false;
+            });
+          }
+          return;
+        }
+      }
+
+      // 視聴記録成功後のみ音声を再生
+      final audioUrl = await apiService.getAudioUrl(whisperId: story.id);
       await _audioPlayer.setSourceUrl(audioUrl);
       await _audioPlayer.resume();
-
-      // 視聴記録を送信
-      final userId = ref.read(currentUserIdProvider);
-      if (userId != null && !story.isViewed) {
-        await apiService.recordView(userId: userId, whisperId: story.id);
-      }
     } catch (e) {
       debugPrint('Error loading audio: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.error_outline_rounded,
+                  color: AppTheme.error,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '音声の読み込みに失敗しました',
+                  style: TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppTheme.bgElevated,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            ),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -147,15 +266,37 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
       _loadCurrentStory();
     } else {
       // 最後のストーリー終了
-      context.pop();
+      _closeViewer();
     }
   }
 
   void _togglePlayPause() {
+    // 再生中は一時停止を無効化（要件2.1, 2.5）
+    // 一度再生が開始されたら、ユーザーは停止できない
     if (_isPlaying) {
-      _audioPlayer.pause();
+      // 再生中は一時停止を許可しない
+      return;
     } else {
       _audioPlayer.resume();
+    }
+  }
+
+  void _closeViewer() {
+    // 閉じる前に、このユーザーの全投稿が視聴済みかチェック
+    _checkAndMarkUserAsFullyViewed();
+    context.pop();
+  }
+
+  void _checkAndMarkUserAsFullyViewed() {
+    final viewedStoryIds = ref.read(viewedStoryIdsProvider);
+    // サーバーから既に視聴済みとして返ってきたストーリーも考慮
+    final allViewed = widget.story.stories.every((story) =>
+        story.isViewed || viewedStoryIds.contains(story.id));
+
+    if (allViewed) {
+      ref.read(viewedUserIdsProvider.notifier).update((state) {
+        return {...state, widget.story.user.id};
+      });
     }
   }
 
@@ -320,7 +461,7 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
               Icons.close_rounded,
               color: AppTheme.textPrimary,
             ),
-            onPressed: () => context.pop(),
+            onPressed: _closeViewer,
           ),
         ],
       ),

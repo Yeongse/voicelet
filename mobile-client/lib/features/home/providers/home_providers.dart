@@ -5,6 +5,14 @@ import '../../auth/providers/auth_provider.dart';
 
 final homeApiServiceProvider = Provider((ref) => HomeApiService());
 
+/// セッション中に視聴したストーリーIDを追跡
+/// 個別のストーリー視聴状態をリアルタイムに追跡するために使用
+final viewedStoryIdsProvider = StateProvider<Set<String>>((ref) => {});
+
+/// セッション中に全投稿を視聴済みになったユーザーIDを追跡
+/// リストが更新されるまでの間、グレー枠で表示するために使用
+final viewedUserIdsProvider = StateProvider<Set<String>>((ref) => {});
+
 /// フォロー中ユーザーのストーリー
 /// keepAlive()を使用してタブ切り替え時のちらつきを防止
 final storiesProvider = FutureProvider<List<UserStory>>((ref) async {
@@ -53,6 +61,5 @@ final discoverUserStoriesProvider = FutureProvider.autoDispose
   return UserStory(
     user: response.user!,
     stories: response.stories,
-    hasUnviewed: response.stories.any((s) => !s.isViewed),
   );
 });

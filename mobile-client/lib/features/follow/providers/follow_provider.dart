@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/follow_models.dart';
 import '../services/follow_api_service.dart';
+import '../../home/providers/home_providers.dart';
 
 /// フォローAPIサービスプロバイダー
 final followApiServiceProvider = Provider((ref) => FollowApiService());
@@ -9,8 +10,9 @@ final followApiServiceProvider = Provider((ref) => FollowApiService());
 /// ユーザーのフォロー状態を管理するNotifier
 class UserFollowStatusNotifier extends StateNotifier<Map<String, FollowStatus>> {
   final FollowApiService _service;
+  final Ref _ref;
 
-  UserFollowStatusNotifier(this._service) : super({});
+  UserFollowStatusNotifier(this._service, this._ref) : super({});
 
   /// フォロー状態を設定
   void setStatus(String userId, FollowStatus status) {
@@ -29,6 +31,8 @@ class UserFollowStatusNotifier extends StateNotifier<Map<String, FollowStatus>> 
       } else {
         state = {...state, userId: FollowStatus.requested};
       }
+      // 関連するリストを更新
+      _invalidateRelatedProviders();
       return true;
     } catch (e) {
       // 失敗時は元に戻す
@@ -38,18 +42,38 @@ class UserFollowStatusNotifier extends StateNotifier<Map<String, FollowStatus>> 
   }
 
   /// アンフォロー操作（オプティミスティック更新）
-  Future<bool> unfollow(String userId) async {
+  /// currentUserIdを渡すと、そのユーザーのフォロー中リストからも楽観的に削除される
+  Future<bool> unfollow(String userId, {String? currentUserId}) async {
     final previousStatus = state[userId] ?? FollowStatus.following;
 
     // オプティミスティック更新
     state = {...state, userId: FollowStatus.none};
 
+    // ローカルキャッシュからも削除
+    if (currentUserId != null) {
+      _ref.read(followingListCacheProvider.notifier).removeUser(currentUserId, userId);
+      // フォロー数の調整
+      final current = _ref.read(followCountDeltaProvider);
+      final existing = current[currentUserId] ?? (followingDelta: 0, followersDelta: 0);
+      _ref.read(followCountDeltaProvider.notifier).state = {
+        ...current,
+        currentUserId: (
+          followingDelta: existing.followingDelta - 1,
+          followersDelta: existing.followersDelta,
+        ),
+      };
+    }
+
     try {
       await _service.unfollow(userId);
+      // 関連するリストを更新
+      _invalidateRelatedProviders();
       return true;
     } catch (e) {
       // 失敗時は元に戻す
       state = {...state, userId: previousStatus};
+      // キャッシュも元に戻す必要があるが、複雑になるのでinvalidateで対応
+      _invalidateRelatedProviders();
       rethrow;
     }
   }
@@ -63,6 +87,8 @@ class UserFollowStatusNotifier extends StateNotifier<Map<String, FollowStatus>> 
 
     try {
       await _service.cancelRequest(requestId);
+      // 関連するリストを更新
+      _invalidateRelatedProviders();
       return true;
     } catch (e) {
       // 失敗時は元に戻す
@@ -70,13 +96,22 @@ class UserFollowStatusNotifier extends StateNotifier<Map<String, FollowStatus>> 
       rethrow;
     }
   }
+
+  /// フォロー関連のプロバイダーを再取得
+  void _invalidateRelatedProviders() {
+    // ホーム画面のストーリーリストとおすすめリスト
+    _ref.invalidate(storiesProvider);
+    _ref.invalidate(discoverProvider);
+    // フォロー中/フォロワーリストはfamilyプロバイダーなので個別にinvalidateできない
+    // 画面遷移時に再取得される
+  }
 }
 
 /// ユーザーフォロー状態プロバイダー
 final userFollowStatusProvider =
     StateNotifierProvider<UserFollowStatusNotifier, Map<String, FollowStatus>>((ref) {
   final service = ref.watch(followApiServiceProvider);
-  return UserFollowStatusNotifier(service);
+  return UserFollowStatusNotifier(service, ref);
 });
 
 /// フォロー中ユーザー一覧プロバイダー
@@ -145,3 +180,93 @@ final followRequestNotifierProvider =
   final service = ref.watch(followApiServiceProvider);
   return FollowRequestNotifier(service, ref);
 });
+
+/// フォロー中ユーザーのローカルキャッシュ（楽観的更新用）
+/// key: userId, value: そのユーザーがフォローしているユーザーリスト
+class FollowingListNotifier extends StateNotifier<Map<String, List<UserWithFollowStatus>>> {
+  FollowingListNotifier() : super({});
+
+  /// リストを設定（API取得時）
+  void setList(String userId, List<UserWithFollowStatus> users) {
+    state = {...state, userId: users};
+  }
+
+  /// ユーザーを楽観的に削除
+  void removeUser(String ownerId, String targetUserId) {
+    final list = state[ownerId];
+    if (list == null) return;
+
+    state = {
+      ...state,
+      ownerId: list.where((u) => u.id != targetUserId).toList(),
+    };
+  }
+
+  /// リストをクリア
+  void clear(String userId) {
+    final newState = Map<String, List<UserWithFollowStatus>>.from(state);
+    newState.remove(userId);
+    state = newState;
+  }
+}
+
+final followingListCacheProvider =
+    StateNotifierProvider<FollowingListNotifier, Map<String, List<UserWithFollowStatus>>>((ref) {
+  return FollowingListNotifier();
+});
+
+/// フォロワーのローカルキャッシュ（楽観的更新用）
+class FollowersListNotifier extends StateNotifier<Map<String, List<UserWithFollowStatus>>> {
+  FollowersListNotifier() : super({});
+
+  void setList(String userId, List<UserWithFollowStatus> users) {
+    state = {...state, userId: users};
+  }
+
+  void removeUser(String ownerId, String targetUserId) {
+    final list = state[ownerId];
+    if (list == null) return;
+
+    state = {
+      ...state,
+      ownerId: list.where((u) => u.id != targetUserId).toList(),
+    };
+  }
+
+  void clear(String userId) {
+    final newState = Map<String, List<UserWithFollowStatus>>.from(state);
+    newState.remove(userId);
+    state = newState;
+  }
+}
+
+final followersListCacheProvider =
+    StateNotifierProvider<FollowersListNotifier, Map<String, List<UserWithFollowStatus>>>((ref) {
+  return FollowersListNotifier();
+});
+
+/// フォロー数の調整値（楽観的更新用）
+/// key: userId, value: (followingDelta, followersDelta)
+final followCountDeltaProvider =
+    StateProvider<Map<String, ({int followingDelta, int followersDelta})>>((ref) => {});
+
+/// フォロー数の調整を追加
+void adjustFollowCount(WidgetRef ref, String userId, {int followingDelta = 0, int followersDelta = 0}) {
+  final current = ref.read(followCountDeltaProvider);
+  final existing = current[userId] ?? (followingDelta: 0, followersDelta: 0);
+  ref.read(followCountDeltaProvider.notifier).state = {
+    ...current,
+    userId: (
+      followingDelta: existing.followingDelta + followingDelta,
+      followersDelta: existing.followersDelta + followersDelta,
+    ),
+  };
+}
+
+/// フォロー数の調整をリセット
+void resetFollowCountDelta(WidgetRef ref, String userId) {
+  final current = ref.read(followCountDeltaProvider);
+  final newState = Map<String, ({int followingDelta, int followersDelta})>.from(current);
+  newState.remove(userId);
+  ref.read(followCountDeltaProvider.notifier).state = newState;
+}

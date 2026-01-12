@@ -171,14 +171,6 @@ class ProfileDrawer extends ConsumerWidget {
             context.push('/profile');
           },
         ),
-        _MenuTile(
-          icon: Icons.edit_outlined,
-          label: 'プロフィール編集',
-          onTap: () {
-            Navigator.of(context).pop();
-            context.push('/profile/edit');
-          },
-        ),
         _FollowRequestMenuTile(
           onTap: () {
             Navigator.of(context).pop();
@@ -255,9 +247,13 @@ class ProfileDrawer extends ConsumerWidget {
                 );
 
                 if (confirm == true && context.mounted) {
-                  Navigator.of(context).pop();
-                  context.go('/');
-                  ref.read(authProvider.notifier).signOut();
+                  // signOutの完了を待ってから画面遷移
+                  await ref.read(authProvider.notifier).signOut();
+                  if (context.mounted) {
+                    // ドロワーを閉じてからトップ画面に遷移
+                    Navigator.of(context).pop();
+                    context.go('/');
+                  }
                 }
               },
               icon: Icon(

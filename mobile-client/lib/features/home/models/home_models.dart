@@ -128,3 +128,29 @@ class MyWhisper with _$MyWhisper {
   factory MyWhisper.fromJson(Map<String, dynamic> json) =>
       _$MyWhisperFromJson(json);
 }
+
+/// ストーリー閲覧者
+@freezed
+class WhisperViewer with _$WhisperViewer {
+  const factory WhisperViewer({
+    required String id,
+    required String name,
+    String? avatarUrl,
+    required String viewedAt,
+  }) = _WhisperViewer;
+
+  factory WhisperViewer.fromJson(Map<String, dynamic> json) =>
+      _$WhisperViewerFromJson(json);
+}
+
+/// 閲覧者一覧レスポンス
+@freezed
+class ViewersResponse with _$ViewersResponse {
+  const factory ViewersResponse({
+    required List<WhisperViewer> data,
+    required int totalCount,
+  }) = _ViewersResponse;
+
+  factory ViewersResponse.fromJson(Map<String, dynamic> json) =>
+      _$ViewersResponseFromJson(json);
+}

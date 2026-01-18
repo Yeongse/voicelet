@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/dialogs.dart';
 import '../../auth/models/profile.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../follow/models/follow_models.dart';
@@ -40,38 +41,13 @@ class ProfilePage extends ConsumerWidget {
                 IconButton(
                   icon: const Icon(Icons.logout),
                   onPressed: () async {
-                    final confirm = await showDialog<bool>(
+                    final confirm = await showDestructiveConfirmDialog(
                       context: context,
-                      builder: (context) => AlertDialog(
-                        backgroundColor: AppTheme.bgSecondary,
-                        title: Text(
-                          'ログアウト',
-                          style: TextStyle(color: AppTheme.textPrimary),
-                        ),
-                        content: Text(
-                          'ログアウトしますか？',
-                          style: TextStyle(color: AppTheme.textSecondary),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: Text(
-                              'キャンセル',
-                              style: TextStyle(color: AppTheme.textSecondary),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: Text(
-                              'ログアウト',
-                              style: TextStyle(color: AppTheme.error),
-                            ),
-                          ),
-                        ],
-                      ),
+                      message: 'ログアウトしますか？',
+                      destructiveText: 'ログアウト',
                     );
 
-                    if (confirm == true && context.mounted) {
+                    if (confirm && context.mounted) {
                       // 先に画面遷移してからサインアウトを実行
                       context.go('/login');
                       ref.read(authProvider.notifier).signOut();
@@ -427,29 +403,13 @@ class _FollowListBottomSheetState extends ConsumerState<_FollowListBottomSheet>
   }
 
   Future<void> _showRemoveFollowerDialog(UserWithFollowStatus user) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showDestructiveConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.bgSecondary,
-        title: Text('フォロワー削除', style: TextStyle(color: AppTheme.textPrimary)),
-        content: Text(
-          '${user.name ?? 'このユーザー'}をフォロワーから削除しますか？',
-          style: TextStyle(color: AppTheme.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('キャンセル', style: TextStyle(color: AppTheme.textSecondary)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text('削除', style: TextStyle(color: AppTheme.error)),
-          ),
-        ],
-      ),
+      message: '${user.name ?? 'このユーザー'}をフォロワーから削除しますか？',
+      destructiveText: 'フォロワーを削除',
     );
 
-    if (confirmed == true && mounted) {
+    if (confirmed && mounted) {
       try {
         final service = ref.read(followApiServiceProvider);
         await service.removeFollower(user.id);

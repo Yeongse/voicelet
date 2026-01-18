@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/dialogs.dart';
 import '../models/follow_models.dart';
 import '../providers/follow_provider.dart';
 import '../widgets/user_list_tile.dart';
@@ -266,42 +267,38 @@ class _FollowersList extends ConsumerWidget {
     WidgetRef ref,
     UserWithFollowStatus user,
   ) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showDestructiveConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.bgSecondary,
-        title: Text('フォロワー削除', style: TextStyle(color: AppTheme.textPrimary)),
-        content: Text(
-          '${user.name ?? 'このユーザー'}をフォロワーから削除しますか？',
-          style: TextStyle(color: AppTheme.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('キャンセル', style: TextStyle(color: AppTheme.textSecondary)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text('削除', style: TextStyle(color: AppTheme.error)),
-          ),
-        ],
-      ),
+      message: '${user.name ?? 'このユーザー'}をフォロワーから削除しますか？',
+      destructiveText: 'フォロワーを削除',
     );
 
-    if (confirmed == true && context.mounted) {
+    if (confirmed && context.mounted) {
       try {
         final service = ref.read(followApiServiceProvider);
         await service.removeFollower(user.id);
         ref.invalidate(followersListProvider((userId: userId, page: 1)));
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('フォロワーを削除しました')),
+            SnackBar(
+              content: Text(
+                'フォロワーを削除しました',
+                style: TextStyle(color: AppTheme.textPrimary),
+              ),
+              backgroundColor: AppTheme.bgElevated,
+            ),
           );
         }
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('削除に失敗しました: $e')),
+            SnackBar(
+              content: Text(
+                '削除に失敗しました: $e',
+                style: TextStyle(color: AppTheme.textPrimary),
+              ),
+              backgroundColor: AppTheme.bgElevated,
+            ),
           );
         }
       }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/dialogs.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../services/recording_service.dart';
 import '../widgets/waveform_indicator.dart';
@@ -142,34 +143,18 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
     );
   }
 
-  void _showPermissionDialog() {
-    showDialog(
+  Future<void> _showPermissionDialog() async {
+    final openSettings = await showConfirmAlertDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.bgElevated.withValues(alpha: 0.95),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        ),
-        title: const Text(
-          'マイクへのアクセス',
-          style: TextStyle(color: AppTheme.textPrimary),
-        ),
-        content: const Text(
-          'マイクへのアクセスが許可されていません。\n設定からアクセスを許可してください。',
-          style: TextStyle(color: AppTheme.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('閉じる'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('設定を開く'),
-          ),
-        ],
-      ),
+      title: 'マイクへのアクセス',
+      message: 'マイクへのアクセスが許可されていません。\n設定からアクセスを許可してください。',
+      confirmText: '設定を開く',
+      cancelText: '閉じる',
     );
+
+    if (openSettings) {
+      // TODO: 設定画面を開く処理
+    }
   }
 
   @override

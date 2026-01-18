@@ -88,4 +88,28 @@ class HomeApiService {
     final data = response.data as Map<String, dynamic>;
     return data['signedUrl'] as String;
   }
+
+  /// ストーリー閲覧者一覧取得
+  Future<ViewersResponse> getViewers({
+    required String whisperId,
+    required String userId,
+  }) async {
+    final response = await _apiClient.dio.get(
+      '/api/whispers/$whisperId/viewers',
+      queryParameters: {'userId': userId},
+    );
+    return ViewersResponse.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// ストーリー削除
+  Future<void> deleteWhisper({
+    required String whisperId,
+    required String userId,
+  }) async {
+    await _apiClient.dio.delete(
+      '/api/whispers/$whisperId',
+      queryParameters: {'userId': userId},
+      options: Options(contentType: null),
+    );
+  }
 }

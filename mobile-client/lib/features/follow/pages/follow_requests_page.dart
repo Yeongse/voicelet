@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/dialogs.dart';
 import '../models/follow_models.dart';
 import '../providers/follow_provider.dart';
 
@@ -419,32 +420,13 @@ class _SentRequestTileState extends ConsumerState<_SentRequestTile> {
   bool _isLoading = false;
 
   Future<void> _cancel() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showDestructiveConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.bgSecondary,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Text('リクエスト取消', style: TextStyle(color: AppTheme.textPrimary)),
-        content: Text(
-          'フォローリクエストを取り消しますか？',
-          style: TextStyle(color: AppTheme.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('キャンセル', style: TextStyle(color: AppTheme.textSecondary)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text('取消', style: TextStyle(color: AppTheme.error)),
-          ),
-        ],
-      ),
+      message: 'フォローリクエストを取り消しますか？',
+      destructiveText: 'リクエストを取消',
     );
 
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     setState(() => _isLoading = true);
     try {

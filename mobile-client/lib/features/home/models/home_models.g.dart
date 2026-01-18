@@ -163,3 +163,35 @@ Map<String, dynamic> _$$MyWhisperImplToJson(_$MyWhisperImpl instance) =>
       'createdAt': instance.createdAt,
       'expiresAt': instance.expiresAt,
     };
+
+_$WhisperViewerImpl _$$WhisperViewerImplFromJson(Map<String, dynamic> json) =>
+    _$WhisperViewerImpl(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      avatarUrl: json['avatarUrl'] as String?,
+      viewedAt: json['viewedAt'] as String,
+    );
+
+Map<String, dynamic> _$$WhisperViewerImplToJson(_$WhisperViewerImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'avatarUrl': instance.avatarUrl,
+      'viewedAt': instance.viewedAt,
+    };
+
+_$ViewersResponseImpl _$$ViewersResponseImplFromJson(
+  Map<String, dynamic> json,
+) => _$ViewersResponseImpl(
+  data: (json['data'] as List<dynamic>)
+      .map((e) => WhisperViewer.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  totalCount: (json['totalCount'] as num).toInt(),
+);
+
+Map<String, dynamic> _$$ViewersResponseImplToJson(
+  _$ViewersResponseImpl instance,
+) => <String, dynamic>{
+  'data': instance.data,
+  'totalCount': instance.totalCount,
+};

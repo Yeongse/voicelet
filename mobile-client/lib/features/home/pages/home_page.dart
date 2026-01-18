@@ -96,10 +96,9 @@ class _HomePageState extends ConsumerState<HomePage>
     );
   }
 
-  void _navigateToMyStoryViewer(List<MyWhisper> whispers, int index) {
+  void _navigateToMyStoryViewer(MyWhisper whisper) {
     context.push('/my-story-viewer', extra: {
-      'whispers': whispers,
-      'initialIndex': index,
+      'whisper': whisper,
     });
   }
 
@@ -132,8 +131,11 @@ class _HomePageState extends ConsumerState<HomePage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('フォローに失敗しました'),
-            backgroundColor: AppTheme.error,
+            content: Text(
+              'フォローに失敗しました',
+              style: TextStyle(color: AppTheme.textPrimary),
+            ),
+            backgroundColor: AppTheme.bgElevated,
           ),
         );
       }

@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/dialogs.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../whisper/providers/whisper_provider.dart';
 import '../services/storage_service.dart';
 import '../widgets/waveform_indicator.dart';
+import '../../home/providers/home_providers.dart';
 
 /// プレビュー画面
 class PreviewPage extends ConsumerStatefulWidget {
@@ -128,47 +130,16 @@ class _PreviewPageState extends ConsumerState<PreviewPage>
     }
   }
 
-  void _showReRecordConfirmation() {
-    showDialog(
+  Future<void> _showReRecordConfirmation() async {
+    final confirmed = await showDestructiveConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.bgElevated.withValues(alpha: 0.95),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        ),
-        title: const Text(
-          '再録音しますか？',
-          style: TextStyle(
-            color: AppTheme.textPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        content: const Text(
-          '現在の録音は破棄されます。',
-          style: TextStyle(color: AppTheme.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'キャンセル',
-              style: TextStyle(color: AppTheme.textSecondary),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _reRecord();
-            },
-            child: const Text(
-              '再録音する',
-              style: TextStyle(color: AppTheme.error),
-            ),
-          ),
-        ],
-      ),
+      message: '現在の録音は破棄されます。\n再録音しますか？',
+      destructiveText: '再録音する',
     );
+
+    if (confirmed) {
+      _reRecord();
+    }
   }
 
   @override
@@ -668,6 +639,8 @@ class _PreviewPageState extends ConsumerState<PreviewPage>
 
     if (whisper != null && mounted) {
       _showSuccessSnackBar('投稿しました');
+      // myWhispersProviderをinvalidateして投稿直後にホーム画面に反映
+      ref.invalidate(myWhispersProvider);
       // 成功後、ホーム画面に戻る
       await Future.delayed(const Duration(milliseconds: 500));
       if (mounted) {

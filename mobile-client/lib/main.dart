@@ -15,6 +15,7 @@ import 'features/splash/pages/splash_page.dart';
 import 'features/whisper/pages/whisper_list_page.dart';
 import 'features/home/pages/home_page.dart';
 import 'features/home/pages/story_viewer_page.dart';
+import 'features/home/pages/my_story_viewer_page.dart';
 import 'features/home/models/home_models.dart';
 import 'features/auth/pages/login_page.dart';
 import 'features/auth/pages/signin_page.dart';
@@ -102,6 +103,14 @@ final _router = GoRouter(
         final extra = state.extra as Map<String, dynamic>;
         final userStory = extra['story'] as UserStory;
         return StoryViewerPage(story: userStory);
+      },
+    ),
+    GoRoute(
+      path: '/my-story-viewer',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>;
+        final whisper = extra['whisper'] as MyWhisper;
+        return MyStoryViewerPage(whisper: whisper);
       },
     ),
     GoRoute(

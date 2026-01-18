@@ -16,7 +16,7 @@ const REAL_USER_EMAIL = 'yeongsekm@gmail.com'
 const GCS_BUCKET_NAME = process.env.GCS_BUCKET_NAME ?? 'voicelet-audio-voicelet'
 
 // テスト用の固定音声ファイル名（再生動作確認用）
-const DEMO_AUDIO_FILE = 'demo-user-001_1768107417528.m4a'
+const DEMO_AUDIO_FILE = 'f7974ff5-fb84-47aa-b255-198874396a0c_1768662992629.m4a'
 
 async function main() {
   console.log('🌱 Seeding database...')

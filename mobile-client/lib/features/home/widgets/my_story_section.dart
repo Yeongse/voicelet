@@ -8,7 +8,7 @@ import 'add_story_button.dart';
 /// My Storyセクション（自分の投稿一覧 + 新規投稿ボタン）
 class MyStorySection extends ConsumerWidget {
   final VoidCallback? onAddTap;
-  final void Function(List<MyWhisper> whispers, int index)? onWhisperTap;
+  final void Function(MyWhisper whisper)? onWhisperTap;
 
   const MyStorySection({
     super.key,
@@ -48,10 +48,14 @@ class MyStorySection extends ConsumerWidget {
   }
 
   Widget _buildContent(List<MyWhisper> whispers) {
+    // 新しい順（左から右へ、最新が左）にソート
+    final sortedWhispers = List<MyWhisper>.from(whispers)
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
     return ListView.builder(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      itemCount: whispers.length + 1, // +1 for add button
+      itemCount: sortedWhispers.length + 1, // +1 for add button
       itemBuilder: (context, index) {
         if (index == 0) {
           return Padding(
@@ -63,12 +67,12 @@ class MyStorySection extends ConsumerWidget {
           );
         }
 
-        final whisper = whispers[index - 1];
+        final whisper = sortedWhispers[index - 1];
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: _MyWhisperAvatar(
             whisper: whisper,
-            onTap: () => onWhisperTap?.call(whispers, index - 1),
+            onTap: () => onWhisperTap?.call(whisper),
           ),
         );
       },

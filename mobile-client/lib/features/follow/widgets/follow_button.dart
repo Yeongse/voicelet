@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/dialogs.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../models/follow_models.dart';
 import '../providers/follow_provider.dart';
@@ -77,7 +78,13 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('操作に失敗しました: $e')),
+          SnackBar(
+            content: Text(
+              '操作に失敗しました: $e',
+              style: TextStyle(color: AppTheme.textPrimary),
+            ),
+            backgroundColor: AppTheme.bgElevated,
+          ),
         );
       }
     } finally {
@@ -87,39 +94,11 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
     }
   }
 
-  Future<bool?> _showUnfollowConfirmDialog() {
-    return showDialog<bool>(
+  Future<bool> _showUnfollowConfirmDialog() {
+    return showDestructiveConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.bgSecondary,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Text(
-          'フォロー解除',
-          style: TextStyle(color: AppTheme.textPrimary),
-        ),
-        content: Text(
-          'フォローを解除しますか？',
-          style: TextStyle(color: AppTheme.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'キャンセル',
-              style: TextStyle(color: AppTheme.textSecondary),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              '解除',
-              style: TextStyle(color: AppTheme.error),
-            ),
-          ),
-        ],
-      ),
+      message: 'フォローを解除しますか？',
+      destructiveText: 'フォロー解除',
     );
   }
 

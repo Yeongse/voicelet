@@ -70,8 +70,11 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('アバターを更新しました'),
-            backgroundColor: AppTheme.success,
+            content: Text(
+              'アバターを更新しました',
+              style: TextStyle(color: AppTheme.textPrimary),
+            ),
+            backgroundColor: AppTheme.bgElevated,
           ),
         );
       }
@@ -96,8 +99,11 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('プロフィールを更新しました'),
-          backgroundColor: AppTheme.success,
+          content: Text(
+            'プロフィールを更新しました',
+            style: TextStyle(color: AppTheme.textPrimary),
+          ),
+          backgroundColor: AppTheme.bgElevated,
         ),
       );
       context.pop();

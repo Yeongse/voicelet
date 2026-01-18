@@ -2106,3 +2106,403 @@ abstract class _MyWhisper implements MyWhisper {
   _$$MyWhisperImplCopyWith<_$MyWhisperImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
+
+WhisperViewer _$WhisperViewerFromJson(Map<String, dynamic> json) {
+  return _WhisperViewer.fromJson(json);
+}
+
+/// @nodoc
+mixin _$WhisperViewer {
+  String get id => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
+  String? get avatarUrl => throw _privateConstructorUsedError;
+  String get viewedAt => throw _privateConstructorUsedError;
+
+  /// Serializes this WhisperViewer to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of WhisperViewer
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $WhisperViewerCopyWith<WhisperViewer> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $WhisperViewerCopyWith<$Res> {
+  factory $WhisperViewerCopyWith(
+    WhisperViewer value,
+    $Res Function(WhisperViewer) then,
+  ) = _$WhisperViewerCopyWithImpl<$Res, WhisperViewer>;
+  @useResult
+  $Res call({String id, String name, String? avatarUrl, String viewedAt});
+}
+
+/// @nodoc
+class _$WhisperViewerCopyWithImpl<$Res, $Val extends WhisperViewer>
+    implements $WhisperViewerCopyWith<$Res> {
+  _$WhisperViewerCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of WhisperViewer
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? avatarUrl = freezed,
+    Object? viewedAt = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            name: null == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                      as String,
+            avatarUrl: freezed == avatarUrl
+                ? _value.avatarUrl
+                : avatarUrl // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            viewedAt: null == viewedAt
+                ? _value.viewedAt
+                : viewedAt // ignore: cast_nullable_to_non_nullable
+                      as String,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$WhisperViewerImplCopyWith<$Res>
+    implements $WhisperViewerCopyWith<$Res> {
+  factory _$$WhisperViewerImplCopyWith(
+    _$WhisperViewerImpl value,
+    $Res Function(_$WhisperViewerImpl) then,
+  ) = __$$WhisperViewerImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String id, String name, String? avatarUrl, String viewedAt});
+}
+
+/// @nodoc
+class __$$WhisperViewerImplCopyWithImpl<$Res>
+    extends _$WhisperViewerCopyWithImpl<$Res, _$WhisperViewerImpl>
+    implements _$$WhisperViewerImplCopyWith<$Res> {
+  __$$WhisperViewerImplCopyWithImpl(
+    _$WhisperViewerImpl _value,
+    $Res Function(_$WhisperViewerImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of WhisperViewer
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? avatarUrl = freezed,
+    Object? viewedAt = null,
+  }) {
+    return _then(
+      _$WhisperViewerImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        name: null == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String,
+        avatarUrl: freezed == avatarUrl
+            ? _value.avatarUrl
+            : avatarUrl // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        viewedAt: null == viewedAt
+            ? _value.viewedAt
+            : viewedAt // ignore: cast_nullable_to_non_nullable
+                  as String,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$WhisperViewerImpl implements _WhisperViewer {
+  const _$WhisperViewerImpl({
+    required this.id,
+    required this.name,
+    this.avatarUrl,
+    required this.viewedAt,
+  });
+
+  factory _$WhisperViewerImpl.fromJson(Map<String, dynamic> json) =>
+      _$$WhisperViewerImplFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String name;
+  @override
+  final String? avatarUrl;
+  @override
+  final String viewedAt;
+
+  @override
+  String toString() {
+    return 'WhisperViewer(id: $id, name: $name, avatarUrl: $avatarUrl, viewedAt: $viewedAt)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$WhisperViewerImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.avatarUrl, avatarUrl) ||
+                other.avatarUrl == avatarUrl) &&
+            (identical(other.viewedAt, viewedAt) ||
+                other.viewedAt == viewedAt));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, id, name, avatarUrl, viewedAt);
+
+  /// Create a copy of WhisperViewer
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$WhisperViewerImplCopyWith<_$WhisperViewerImpl> get copyWith =>
+      __$$WhisperViewerImplCopyWithImpl<_$WhisperViewerImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$WhisperViewerImplToJson(this);
+  }
+}
+
+abstract class _WhisperViewer implements WhisperViewer {
+  const factory _WhisperViewer({
+    required final String id,
+    required final String name,
+    final String? avatarUrl,
+    required final String viewedAt,
+  }) = _$WhisperViewerImpl;
+
+  factory _WhisperViewer.fromJson(Map<String, dynamic> json) =
+      _$WhisperViewerImpl.fromJson;
+
+  @override
+  String get id;
+  @override
+  String get name;
+  @override
+  String? get avatarUrl;
+  @override
+  String get viewedAt;
+
+  /// Create a copy of WhisperViewer
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$WhisperViewerImplCopyWith<_$WhisperViewerImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+ViewersResponse _$ViewersResponseFromJson(Map<String, dynamic> json) {
+  return _ViewersResponse.fromJson(json);
+}
+
+/// @nodoc
+mixin _$ViewersResponse {
+  List<WhisperViewer> get data => throw _privateConstructorUsedError;
+  int get totalCount => throw _privateConstructorUsedError;
+
+  /// Serializes this ViewersResponse to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of ViewersResponse
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $ViewersResponseCopyWith<ViewersResponse> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $ViewersResponseCopyWith<$Res> {
+  factory $ViewersResponseCopyWith(
+    ViewersResponse value,
+    $Res Function(ViewersResponse) then,
+  ) = _$ViewersResponseCopyWithImpl<$Res, ViewersResponse>;
+  @useResult
+  $Res call({List<WhisperViewer> data, int totalCount});
+}
+
+/// @nodoc
+class _$ViewersResponseCopyWithImpl<$Res, $Val extends ViewersResponse>
+    implements $ViewersResponseCopyWith<$Res> {
+  _$ViewersResponseCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of ViewersResponse
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? data = null, Object? totalCount = null}) {
+    return _then(
+      _value.copyWith(
+            data: null == data
+                ? _value.data
+                : data // ignore: cast_nullable_to_non_nullable
+                      as List<WhisperViewer>,
+            totalCount: null == totalCount
+                ? _value.totalCount
+                : totalCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$ViewersResponseImplCopyWith<$Res>
+    implements $ViewersResponseCopyWith<$Res> {
+  factory _$$ViewersResponseImplCopyWith(
+    _$ViewersResponseImpl value,
+    $Res Function(_$ViewersResponseImpl) then,
+  ) = __$$ViewersResponseImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({List<WhisperViewer> data, int totalCount});
+}
+
+/// @nodoc
+class __$$ViewersResponseImplCopyWithImpl<$Res>
+    extends _$ViewersResponseCopyWithImpl<$Res, _$ViewersResponseImpl>
+    implements _$$ViewersResponseImplCopyWith<$Res> {
+  __$$ViewersResponseImplCopyWithImpl(
+    _$ViewersResponseImpl _value,
+    $Res Function(_$ViewersResponseImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of ViewersResponse
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? data = null, Object? totalCount = null}) {
+    return _then(
+      _$ViewersResponseImpl(
+        data: null == data
+            ? _value._data
+            : data // ignore: cast_nullable_to_non_nullable
+                  as List<WhisperViewer>,
+        totalCount: null == totalCount
+            ? _value.totalCount
+            : totalCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$ViewersResponseImpl implements _ViewersResponse {
+  const _$ViewersResponseImpl({
+    required final List<WhisperViewer> data,
+    required this.totalCount,
+  }) : _data = data;
+
+  factory _$ViewersResponseImpl.fromJson(Map<String, dynamic> json) =>
+      _$$ViewersResponseImplFromJson(json);
+
+  final List<WhisperViewer> _data;
+  @override
+  List<WhisperViewer> get data {
+    if (_data is EqualUnmodifiableListView) return _data;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_data);
+  }
+
+  @override
+  final int totalCount;
+
+  @override
+  String toString() {
+    return 'ViewersResponse(data: $data, totalCount: $totalCount)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$ViewersResponseImpl &&
+            const DeepCollectionEquality().equals(other._data, _data) &&
+            (identical(other.totalCount, totalCount) ||
+                other.totalCount == totalCount));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    const DeepCollectionEquality().hash(_data),
+    totalCount,
+  );
+
+  /// Create a copy of ViewersResponse
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$ViewersResponseImplCopyWith<_$ViewersResponseImpl> get copyWith =>
+      __$$ViewersResponseImplCopyWithImpl<_$ViewersResponseImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$ViewersResponseImplToJson(this);
+  }
+}
+
+abstract class _ViewersResponse implements ViewersResponse {
+  const factory _ViewersResponse({
+    required final List<WhisperViewer> data,
+    required final int totalCount,
+  }) = _$ViewersResponseImpl;
+
+  factory _ViewersResponse.fromJson(Map<String, dynamic> json) =
+      _$ViewersResponseImpl.fromJson;
+
+  @override
+  List<WhisperViewer> get data;
+  @override
+  int get totalCount;
+
+  /// Create a copy of ViewersResponse
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$ViewersResponseImplCopyWith<_$ViewersResponseImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}

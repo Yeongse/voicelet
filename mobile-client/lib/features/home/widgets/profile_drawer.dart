@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/dialogs.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/models/profile.dart';
 import '../../follow/providers/follow_provider.dart';
@@ -212,41 +213,13 @@ class ProfileDrawer extends ConsumerWidget {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () async {
-                final confirm = await showDialog<bool>(
+                final confirm = await showDestructiveConfirmDialog(
                   context: context,
-                  builder: (context) => AlertDialog(
-                    backgroundColor: AppTheme.bgSecondary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    title: Text(
-                      'ログアウト',
-                      style: TextStyle(color: AppTheme.textPrimary),
-                    ),
-                    content: Text(
-                      'ログアウトしますか？',
-                      style: TextStyle(color: AppTheme.textSecondary),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: Text(
-                          'キャンセル',
-                          style: TextStyle(color: AppTheme.textSecondary),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: Text(
-                          'ログアウト',
-                          style: TextStyle(color: AppTheme.error),
-                        ),
-                      ),
-                    ],
-                  ),
+                  message: 'ログアウトしますか？',
+                  destructiveText: 'ログアウト',
                 );
 
-                if (confirm == true && context.mounted) {
+                if (confirm && context.mounted) {
                   // signOutの完了を待ってから画面遷移
                   await ref.read(authProvider.notifier).signOut();
                   if (context.mounted) {

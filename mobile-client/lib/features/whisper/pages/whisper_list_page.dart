@@ -68,8 +68,11 @@ class _WhisperListPageState extends ConsumerState<WhisperListPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('再生エラー: $e'),
-              backgroundColor: AppTheme.error,
+              content: Text(
+                '再生エラー: $e',
+                style: TextStyle(color: AppTheme.textPrimary),
+              ),
+              backgroundColor: AppTheme.bgElevated,
             ),
           );
         }

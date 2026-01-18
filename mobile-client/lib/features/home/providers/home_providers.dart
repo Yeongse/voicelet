@@ -63,3 +63,49 @@ final discoverUserStoriesProvider = FutureProvider.autoDispose
     stories: response.stories,
   );
 });
+
+/// ストーリーの閲覧者一覧（whisperId別）
+final viewersProvider = FutureProvider.autoDispose
+    .family<ViewersResponse, String>((ref, whisperId) async {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) {
+    return const ViewersResponse(data: [], totalCount: 0);
+  }
+
+  final apiService = ref.read(homeApiServiceProvider);
+  return apiService.getViewers(whisperId: whisperId, userId: userId);
+});
+
+/// ストーリー削除の状態管理
+class DeleteWhisperNotifier extends StateNotifier<AsyncValue<void>> {
+  DeleteWhisperNotifier(this._ref) : super(const AsyncValue.data(null));
+
+  final Ref _ref;
+
+  Future<bool> deleteWhisper(String whisperId) async {
+    state = const AsyncValue.loading();
+
+    final userId = _ref.read(currentUserIdProvider);
+    if (userId == null) {
+      state = AsyncValue.error('ユーザーが見つかりません', StackTrace.current);
+      return false;
+    }
+
+    try {
+      final apiService = _ref.read(homeApiServiceProvider);
+      await apiService.deleteWhisper(whisperId: whisperId, userId: userId);
+      state = const AsyncValue.data(null);
+      // 削除成功後、myWhispersProviderをリフレッシュ
+      _ref.invalidate(myWhispersProvider);
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+}
+
+final deleteWhisperProvider =
+    StateNotifierProvider<DeleteWhisperNotifier, AsyncValue<void>>((ref) {
+  return DeleteWhisperNotifier(ref);
+});

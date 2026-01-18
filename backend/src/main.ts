@@ -100,6 +100,8 @@ async function buildApp() {
   await app.register(fastifyAutoload, {
     dir: path.join(__dirname, 'controller'),
     options: { prefix: '/api' },
+    // テストファイルとスキーマファイルを除外
+    ignorePattern: /\.test\.(ts|js)$/,
     // _paramName ディレクトリをURLパラメータとして扱う
     dirNameRoutePrefix: (folderParent, folderName) => {
       if (folderName.startsWith('_')) {

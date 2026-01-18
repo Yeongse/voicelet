@@ -76,6 +76,18 @@ export function getBucketName(): string {
   return bucketName
 }
 
+/**
+ * Whisperの音声ファイルを削除
+ */
+export async function deleteWhisperFile(fileName: string): Promise<void> {
+  const bucket = storage.bucket(bucketName)
+  const file = bucket.file(fileName)
+  const [exists] = await file.exists()
+  if (exists) {
+    await file.delete()
+  }
+}
+
 // ===========================================
 // アバター画像用関数
 // ===========================================

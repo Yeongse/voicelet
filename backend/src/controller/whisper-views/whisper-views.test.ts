@@ -1,11 +1,8 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
-import { prisma } from '../../database'
 import Fastify from 'fastify'
 import type { FastifyInstance } from 'fastify'
-import {
-  serializerCompiler,
-  validatorCompiler,
-} from 'fastify-type-provider-zod'
+import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { prisma } from '../../database'
 import whisperViewsController from './controller'
 
 describe('POST /api/whisper-views - 視聴履歴記録API', () => {

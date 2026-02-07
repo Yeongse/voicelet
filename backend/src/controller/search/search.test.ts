@@ -23,11 +23,7 @@ describe('GET /api/search/users', () => {
     await prisma.user.deleteMany({
       where: {
         email: {
-          in: [
-            'searchtest1@example.com',
-            'searchtest2@example.com',
-            'privateuser@example.com',
-          ],
+          in: ['searchtest1@example.com', 'searchtest2@example.com', 'privateuser@example.com'],
         },
       },
     })
@@ -67,11 +63,7 @@ describe('GET /api/search/users', () => {
     await prisma.user.deleteMany({
       where: {
         email: {
-          in: [
-            'searchtest1@example.com',
-            'searchtest2@example.com',
-            'privateuser@example.com',
-          ],
+          in: ['searchtest1@example.com', 'searchtest2@example.com', 'privateuser@example.com'],
         },
       },
     })
@@ -138,7 +130,9 @@ describe('GET /api/search/users', () => {
     const body = JSON.parse(response.payload)
     expect(body.data.length).toBeGreaterThanOrEqual(1)
     // テスト用プライベートユーザーが含まれていることを確認
-    const privateTestUser = body.data.find((u: { username: string }) => u.username === 'private_user')
+    const privateTestUser = body.data.find(
+      (u: { username: string }) => u.username === 'private_user',
+    )
     expect(privateTestUser).toBeDefined()
     expect(privateTestUser.isPrivate).toBe(true)
   })

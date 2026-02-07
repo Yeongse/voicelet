@@ -1,11 +1,8 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
-import { prisma } from '../../database'
 import Fastify from 'fastify'
 import type { FastifyInstance } from 'fastify'
-import {
-  serializerCompiler,
-  validatorCompiler,
-} from 'fastify-type-provider-zod'
+import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { prisma } from '../../database'
 import storiesController from './controller'
 
 describe('GET /api/stories - フォロー中ユーザーストーリーAPI', () => {
@@ -100,9 +97,7 @@ describe('GET /api/stories - フォロー中ユーザーストーリーAPI', () 
     const body = JSON.parse(response.body)
     expect(response.statusCode).toBe(200)
 
-    const viewedStory = body.data[0].stories.find(
-      (s: { id: string }) => s.id === viewedWhisper.id,
-    )
+    const viewedStory = body.data[0].stories.find((s: { id: string }) => s.id === viewedWhisper.id)
     const unviewedStory = body.data[0].stories.find(
       (s: { id: string }) => s.id === unviewedWhisper.id,
     )

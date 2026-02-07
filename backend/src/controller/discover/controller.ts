@@ -38,17 +38,14 @@ export default async function (fastify: ServerInstance) {
       })
       const followingIds = following.map((f) => f.followingId)
 
-      // 有効なWhisperを持つユーザー（自分とフォロー中を除く、鍵アカウントも除外）
       const now = new Date()
-      const usersWithWhispers = await prisma.user.findMany({
+
+      // おすすめユーザーを取得（自分とフォロー中を除く、鍵アカウントも除外）
+      // Whisperがあるユーザーを優先し、ないユーザーも含める
+      const discoverUsers = await prisma.user.findMany({
         where: {
           id: { notIn: [userId, ...followingIds] },
           isPrivate: false,
-          whispers: {
-            some: {
-              expiresAt: { gt: now },
-            },
-          },
         },
         include: {
           whispers: {
@@ -73,11 +70,27 @@ export default async function (fastify: ServerInstance) {
         orderBy: { createdAt: 'desc' },
       })
 
-      const total = usersWithWhispers.length
+      // Whisperがあるユーザーを優先してソート
+      const sortedUsers = discoverUsers.sort((a, b) => {
+        const aHasWhispers = a._count.whispers > 0
+        const bHasWhispers = b._count.whispers > 0
+        if (aHasWhispers && !bHasWhispers) return -1
+        if (!aHasWhispers && bHasWhispers) return 1
+        // 両方Whisperがある場合は最新のWhisper日時でソート
+        if (aHasWhispers && bHasWhispers) {
+          const aLatest = a.whispers[0]?.createdAt ?? new Date(0)
+          const bLatest = b.whispers[0]?.createdAt ?? new Date(0)
+          return bLatest.getTime() - aLatest.getTime()
+        }
+        // 両方Whisperがない場合は登録日時でソート
+        return b.createdAt.getTime() - a.createdAt.getTime()
+      })
+
+      const total = sortedUsers.length
       const totalPages = Math.ceil(total / limit)
       const skip = (page - 1) * limit
 
-      const paginatedUsers = usersWithWhispers.slice(skip, skip + limit)
+      const paginatedUsers = sortedUsers.slice(skip, skip + limit)
 
       const data = paginatedUsers.map((u) => {
         // 未視聴のWhisperがあるかチェック

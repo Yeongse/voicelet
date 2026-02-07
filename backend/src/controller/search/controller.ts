@@ -85,7 +85,10 @@ export default async function (fastify: ServerInstance) {
             try {
               avatarUrl = await generateAvatarDownloadSignedUrl(user.avatarPath, 60)
             } catch (err) {
-              fastify.log.warn({ err, avatarPath: user.avatarPath }, 'Failed to generate avatar URL')
+              fastify.log.warn(
+                { err, avatarPath: user.avatarPath },
+                'Failed to generate avatar URL',
+              )
             }
           }
 

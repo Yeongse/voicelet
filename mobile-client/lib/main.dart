@@ -26,6 +26,7 @@ import 'features/profile/pages/profile_edit_page.dart';
 import 'features/follow/pages/follow_requests_page.dart';
 import 'features/follow/pages/follow_list_page.dart';
 import 'features/search/pages/search_page.dart';
+import 'features/qr_code/pages/qr_code_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -141,6 +142,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/search',
       builder: (context, state) => const SearchPage(),
+    ),
+    GoRoute(
+      path: '/qr-code',
+      builder: (context, state) => const QrCodePage(),
     ),
   ],
 );

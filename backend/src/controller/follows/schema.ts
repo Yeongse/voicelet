@@ -58,6 +58,7 @@ export const paginationQuerySchema = z.object({
 // ユーザー情報（フォロー状態付き）
 export const userWithFollowStatusSchema = z.object({
   id: z.string(),
+  username: z.string().nullable(),
   name: z.string().nullable(),
   bio: z.string().nullable(),
   avatarUrl: z.string().nullable(),

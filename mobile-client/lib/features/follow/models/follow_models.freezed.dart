@@ -18,6 +18,7 @@ final _privateConstructorUsedError = UnsupportedError(
 /// @nodoc
 mixin _$UserWithFollowStatus {
   String get id => throw _privateConstructorUsedError;
+  String? get username => throw _privateConstructorUsedError;
   String? get name => throw _privateConstructorUsedError;
   String? get bio => throw _privateConstructorUsedError;
   String? get avatarUrl => throw _privateConstructorUsedError;
@@ -40,6 +41,7 @@ abstract class $UserWithFollowStatusCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
+    String? username,
     String? name,
     String? bio,
     String? avatarUrl,
@@ -67,6 +69,7 @@ class _$UserWithFollowStatusCopyWithImpl<
   @override
   $Res call({
     Object? id = null,
+    Object? username = freezed,
     Object? name = freezed,
     Object? bio = freezed,
     Object? avatarUrl = freezed,
@@ -79,6 +82,10 @@ class _$UserWithFollowStatusCopyWithImpl<
                 ? _value.id
                 : id // ignore: cast_nullable_to_non_nullable
                       as String,
+            username: freezed == username
+                ? _value.username
+                : username // ignore: cast_nullable_to_non_nullable
+                      as String?,
             name: freezed == name
                 ? _value.name
                 : name // ignore: cast_nullable_to_non_nullable
@@ -116,6 +123,7 @@ abstract class _$$UserWithFollowStatusImplCopyWith<$Res>
   @useResult
   $Res call({
     String id,
+    String? username,
     String? name,
     String? bio,
     String? avatarUrl,
@@ -139,6 +147,7 @@ class __$$UserWithFollowStatusImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
+    Object? username = freezed,
     Object? name = freezed,
     Object? bio = freezed,
     Object? avatarUrl = freezed,
@@ -151,6 +160,10 @@ class __$$UserWithFollowStatusImplCopyWithImpl<$Res>
             ? _value.id
             : id // ignore: cast_nullable_to_non_nullable
                   as String,
+        username: freezed == username
+            ? _value.username
+            : username // ignore: cast_nullable_to_non_nullable
+                  as String?,
         name: freezed == name
             ? _value.name
             : name // ignore: cast_nullable_to_non_nullable
@@ -181,6 +194,7 @@ class __$$UserWithFollowStatusImplCopyWithImpl<$Res>
 class _$UserWithFollowStatusImpl implements _UserWithFollowStatus {
   const _$UserWithFollowStatusImpl({
     required this.id,
+    this.username,
     this.name,
     this.bio,
     this.avatarUrl,
@@ -190,6 +204,8 @@ class _$UserWithFollowStatusImpl implements _UserWithFollowStatus {
 
   @override
   final String id;
+  @override
+  final String? username;
   @override
   final String? name;
   @override
@@ -205,7 +221,7 @@ class _$UserWithFollowStatusImpl implements _UserWithFollowStatus {
 
   @override
   String toString() {
-    return 'UserWithFollowStatus(id: $id, name: $name, bio: $bio, avatarUrl: $avatarUrl, isPrivate: $isPrivate, followStatus: $followStatus)';
+    return 'UserWithFollowStatus(id: $id, username: $username, name: $name, bio: $bio, avatarUrl: $avatarUrl, isPrivate: $isPrivate, followStatus: $followStatus)';
   }
 
   @override
@@ -214,6 +230,8 @@ class _$UserWithFollowStatusImpl implements _UserWithFollowStatus {
         (other.runtimeType == runtimeType &&
             other is _$UserWithFollowStatusImpl &&
             (identical(other.id, id) || other.id == id) &&
+            (identical(other.username, username) ||
+                other.username == username) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.bio, bio) || other.bio == bio) &&
             (identical(other.avatarUrl, avatarUrl) ||
@@ -228,6 +246,7 @@ class _$UserWithFollowStatusImpl implements _UserWithFollowStatus {
   int get hashCode => Object.hash(
     runtimeType,
     id,
+    username,
     name,
     bio,
     avatarUrl,
@@ -251,6 +270,7 @@ class _$UserWithFollowStatusImpl implements _UserWithFollowStatus {
 abstract class _UserWithFollowStatus implements UserWithFollowStatus {
   const factory _UserWithFollowStatus({
     required final String id,
+    final String? username,
     final String? name,
     final String? bio,
     final String? avatarUrl,
@@ -260,6 +280,8 @@ abstract class _UserWithFollowStatus implements UserWithFollowStatus {
 
   @override
   String get id;
+  @override
+  String? get username;
   @override
   String? get name;
   @override

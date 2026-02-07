@@ -16,12 +16,16 @@ class ProfileApiService {
 
   /// プロフィールを新規登録（ユーザーをDBに永続化）
   Future<Profile> registerProfile({
+    required String username,
     required String name,
     String? bio,
     String? birthMonth,
     String? avatarPath,
   }) async {
-    final data = <String, dynamic>{'name': name};
+    final data = <String, dynamic>{
+      'username': username,
+      'name': name,
+    };
     if (bio != null) data['bio'] = bio;
     if (birthMonth != null) data['birthMonth'] = birthMonth;
     if (avatarPath != null) data['avatarPath'] = avatarPath;
@@ -38,6 +42,7 @@ class ProfileApiService {
 
   /// プロフィールを更新
   Future<Profile> updateProfile({
+    String? username,
     String? name,
     String? bio,
     String? birthMonth,
@@ -45,6 +50,7 @@ class ProfileApiService {
     bool? isPrivate,
   }) async {
     final data = <String, dynamic>{};
+    if (username != null) data['username'] = username;
     if (name != null) data['name'] = name;
     if (bio != null) data['bio'] = bio;
     if (birthMonth != null) data['birthMonth'] = birthMonth;

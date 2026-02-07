@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/dialogs.dart';
 import '../models/home_models.dart';
 import '../providers/home_providers.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -406,54 +407,76 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
     );
   }
 
+  Future<void> _navigateToProfile() async {
+    final confirmed = await showConfirmAlertDialog(
+      context: context,
+      title: 'プロフィールを表示',
+      message: '再生を終了してプロフィールページに移動しますか？',
+      confirmText: '表示する',
+    );
+
+    if (!confirmed || !mounted) return;
+
+    await _audioPlayer.stop();
+    _checkAndMarkUserAsFullyViewed();
+    if (!mounted) return;
+    context.pop();
+    context.push('/users/${widget.story.user.id}');
+  }
+
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          // ユーザーアバター
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: AppTheme.textPrimary, width: 2),
-            ),
-            child: ClipOval(
-              child: widget.story.user.avatarUrl != null
-                  ? Image.network(
-                      widget.story.user.avatarUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
-                    )
-                  : _buildDefaultAvatar(),
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          // ユーザー名
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          // ユーザーアバター + 名前（タップでプロフィールへ）
+          GestureDetector(
+            onTap: _navigateToProfile,
+            child: Row(
               children: [
-                Text(
-                  widget.story.user.name,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppTheme.textPrimary, width: 2),
+                  ),
+                  child: ClipOval(
+                    child: widget.story.user.avatarUrl != null
+                        ? Image.network(
+                            widget.story.user.avatarUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
+                          )
+                        : _buildDefaultAvatar(),
                   ),
                 ),
-                Text(
-                  _formatTime(widget.story.stories[_currentIndex].createdAt),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textSecondary,
-                  ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.story.user.name,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      _formatTime(widget.story.stories[_currentIndex].createdAt),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
+
+          const Spacer(),
 
           // 閉じるボタン
           IconButton(

@@ -10,6 +10,7 @@ _$ProfileImpl _$$ProfileImplFromJson(Map<String, dynamic> json) =>
     _$ProfileImpl(
       id: json['id'] as String,
       email: json['email'] as String,
+      username: json['username'] as String?,
       name: json['name'] as String?,
       bio: json['bio'] as String?,
       birthMonth: json['birthMonth'] as String?,
@@ -28,6 +29,7 @@ Map<String, dynamic> _$$ProfileImplToJson(_$ProfileImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
       'email': instance.email,
+      'username': instance.username,
       'name': instance.name,
       'bio': instance.bio,
       'birthMonth': instance.birthMonth,

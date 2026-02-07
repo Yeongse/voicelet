@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/home_models.dart';
 import '../services/home_api_service.dart';
@@ -17,7 +19,11 @@ final viewedUserIdsProvider = StateProvider<Set<String>>((ref) => {});
 /// keepAlive()を使用してタブ切り替え時のちらつきを防止
 final storiesProvider = FutureProvider<List<UserStory>>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
-  if (userId == null) return [];
+  if (userId == null) {
+    // 認証完了まで待機（空リストを返さない）
+    final completer = Completer<List<UserStory>>();
+    return completer.future; // 永遠に完了しないFuture
+  }
 
   final apiService = ref.read(homeApiServiceProvider);
   final response = await apiService.getStories(userId: userId);
@@ -27,7 +33,11 @@ final storiesProvider = FutureProvider<List<UserStory>>((ref) async {
 /// 自分のWhisper一覧
 final myWhispersProvider = FutureProvider.autoDispose<List<MyWhisper>>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
-  if (userId == null) return [];
+  if (userId == null) {
+    // 認証完了まで待機（空リストを返さない）
+    final completer = Completer<List<MyWhisper>>();
+    return completer.future;
+  }
 
   final apiService = ref.read(homeApiServiceProvider);
   return apiService.getMyWhispers(userId: userId);
@@ -37,7 +47,11 @@ final myWhispersProvider = FutureProvider.autoDispose<List<MyWhisper>>((ref) asy
 /// keepAlive()を使用してタブ切り替え時のちらつきを防止
 final discoverProvider = FutureProvider<List<DiscoverUser>>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
-  if (userId == null) return [];
+  if (userId == null) {
+    // 認証完了まで待機（空リストを返さない）
+    final completer = Completer<List<DiscoverUser>>();
+    return completer.future;
+  }
 
   final apiService = ref.read(homeApiServiceProvider);
   final response = await apiService.getDiscover(userId: userId);

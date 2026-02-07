@@ -127,6 +127,53 @@ describe('GET /api/discover - おすすめユーザー一覧API', () => {
     expect(response.statusCode).toBe(200)
     expect(body.data).toHaveLength(0)
   })
+
+  it('鍵アカウント（isPrivate=true）のユーザーはおすすめに表示されない', async () => {
+    // 既存ユーザーを鍵アカウントに変更
+    await prisma.user.update({
+      where: { id: otherUser.id },
+      data: { isPrivate: true },
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/?userId=${viewerUser.id}&page=1&limit=10`,
+    })
+
+    const body = JSON.parse(response.body)
+    expect(response.statusCode).toBe(200)
+    expect(body.data).toHaveLength(0)
+  })
+
+  it('鍵アカウントを公開に変更すると次回取得時からおすすめに表示される', async () => {
+    // まず鍵アカウントに変更
+    await prisma.user.update({
+      where: { id: otherUser.id },
+      data: { isPrivate: true },
+    })
+
+    // 鍵アカウント時は表示されない
+    const response1 = await app.inject({
+      method: 'GET',
+      url: `/?userId=${viewerUser.id}&page=1&limit=10`,
+    })
+    const body1 = JSON.parse(response1.body)
+    expect(body1.data).toHaveLength(0)
+
+    // 公開に戻す
+    await prisma.user.update({
+      where: { id: otherUser.id },
+      data: { isPrivate: false },
+    })
+
+    // 公開後は表示される
+    const response2 = await app.inject({
+      method: 'GET',
+      url: `/?userId=${viewerUser.id}&page=1&limit=10`,
+    })
+    const body2 = JSON.parse(response2.body)
+    expect(body2.data).toHaveLength(1)
+  })
 })
 
 describe('GET /api/discover/:targetUserId/stories - おすすめユーザーストーリーAPI', () => {

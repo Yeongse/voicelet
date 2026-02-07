@@ -45,9 +45,9 @@ class UserListTile extends ConsumerWidget {
           ],
         ],
       ),
-      subtitle: user.bio != null && user.bio!.isNotEmpty
+      subtitle: user.username != null
           ? Text(
-              user.bio!,
+              '@${user.username}',
               style: TextStyle(
                 color: AppTheme.textSecondary,
                 fontSize: 12,

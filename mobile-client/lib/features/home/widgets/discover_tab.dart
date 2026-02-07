@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/shimmer.dart';
 import '../models/home_models.dart';
 import '../providers/home_providers.dart';
 import 'discover_card.dart';
@@ -95,49 +96,21 @@ class DiscoverTab extends ConsumerWidget {
         color: AppTheme.bgSecondary.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
-      child: Row(
+      child: const Row(
         children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppTheme.bgTertiary.withValues(alpha: 0.5),
-            ),
-          ),
-          const SizedBox(width: 12),
+          ShimmerCircle(size: 56),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 100,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: AppTheme.bgTertiary.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  width: 60,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: AppTheme.bgTertiary.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
+                ShimmerBox(width: 100, height: 14),
+                SizedBox(height: 8),
+                ShimmerBox(width: 60, height: 12),
               ],
             ),
           ),
-          Container(
-            width: 80,
-            height: 32,
-            decoration: BoxDecoration(
-              color: AppTheme.bgTertiary.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
+          ShimmerBox(width: 80, height: 32, borderRadius: 16),
         ],
       ),
     );

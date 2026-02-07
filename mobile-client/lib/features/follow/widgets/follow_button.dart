@@ -27,7 +27,6 @@ class FollowButton extends ConsumerStatefulWidget {
 
 class _FollowButtonState extends ConsumerState<FollowButton> {
   bool _isLoading = false;
-  String? _requestId;
 
   @override
   void initState() {
@@ -42,8 +41,8 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
   }
 
   FollowStatus get _status {
-    final statusMap = ref.watch(userFollowStatusProvider);
-    return statusMap[widget.userId] ?? widget.initialStatus;
+    final stateMap = ref.watch(userFollowStatusProvider);
+    return stateMap[widget.userId]?.status ?? widget.initialStatus;
   }
 
   Future<void> _onPressed() async {
@@ -52,6 +51,12 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
     // フォロー中の場合は確認ダイアログを表示
     if (_status == FollowStatus.following) {
       final confirmed = await _showUnfollowConfirmDialog();
+      if (confirmed != true) return;
+    }
+
+    // リクエスト取消の場合も確認ダイアログを表示
+    if (_status == FollowStatus.requested) {
+      final confirmed = await _showCancelRequestConfirmDialog();
       if (confirmed != true) return;
     }
 
@@ -70,9 +75,7 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
           await notifier.unfollow(widget.userId, currentUserId: currentUserId);
           break;
         case FollowStatus.requested:
-          if (_requestId != null) {
-            await notifier.cancelRequest(widget.userId, _requestId!);
-          }
+          await notifier.cancelRequest(widget.userId);
           break;
       }
     } catch (e) {
@@ -102,34 +105,77 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
     );
   }
 
+  Future<bool> _showCancelRequestConfirmDialog() {
+    return showDestructiveConfirmDialog(
+      context: context,
+      message: 'フォローリクエストを取り消しますか？',
+      destructiveText: 'リクエスト取消',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final buttonStyle = _getButtonStyle();
     final buttonText = _getButtonText();
 
     if (widget.compact) {
-      return SizedBox(
-        height: 32,
-        child: OutlinedButton(
-          onPressed: _isLoading ? null : _onPressed,
-          style: buttonStyle.copyWith(
-            padding: WidgetStateProperty.all(
-              const EdgeInsets.symmetric(horizontal: 12),
+      // コンパクトモード: 状態に応じて異なるボタンスタイル
+      if (_status == FollowStatus.none) {
+        // 未フォロー: 塗りつぶしボタン（目立つように）
+        return SizedBox(
+          height: 32,
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : _onPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accentPrimary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 0,
             ),
+            child: _isLoading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(buttonText, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
           ),
-          child: _isLoading
-              ? SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: _getTextColor(),
-                  ),
-                )
-              : Text(buttonText, style: TextStyle(fontSize: 12)),
-        ),
-      );
+        );
+      } else {
+        // フォロー中/リクエスト済み: アウトラインボタン
+        return SizedBox(
+          height: 32,
+          child: OutlinedButton(
+            onPressed: _isLoading ? null : _onPressed,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.textSecondary,
+              side: BorderSide(color: AppTheme.textTertiary.withValues(alpha: 0.5)),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: _isLoading
+                ? SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppTheme.textSecondary,
+                    ),
+                  )
+                : Text(buttonText, style: const TextStyle(fontSize: 12)),
+          ),
+        );
+      }
     }
+
+    final buttonStyle = _getButtonStyle();
 
     return SizedBox(
       width: double.infinity,
@@ -159,16 +205,6 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
         return 'フォロー中';
       case FollowStatus.requested:
         return 'リクエスト済み';
-    }
-  }
-
-  Color _getTextColor() {
-    switch (_status) {
-      case FollowStatus.none:
-        return Colors.white;
-      case FollowStatus.following:
-      case FollowStatus.requested:
-        return AppTheme.textSecondary;
     }
   }
 

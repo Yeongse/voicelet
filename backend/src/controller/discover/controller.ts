@@ -38,11 +38,12 @@ export default async function (fastify: ServerInstance) {
       })
       const followingIds = following.map((f) => f.followingId)
 
-      // 有効なWhisperを持つユーザー（自分とフォロー中を除く）
+      // 有効なWhisperを持つユーザー（自分とフォロー中を除く、鍵アカウントも除外）
       const now = new Date()
       const usersWithWhispers = await prisma.user.findMany({
         where: {
           id: { notIn: [userId, ...followingIds] },
+          isPrivate: false,
           whispers: {
             some: {
               expiresAt: { gt: now },

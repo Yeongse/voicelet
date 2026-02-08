@@ -61,15 +61,25 @@ describe('GET /api/usernames/check', () => {
     expect(response.statusCode).toBe(400)
   })
 
-  it('should accept username with alphanumeric, underscore, and period', async () => {
+  it('should accept username with alphanumeric and underscore only', async () => {
     const response = await app.inject({
       method: 'GET',
       url: '/check',
-      query: { username: 'user_name.123' },
+      query: { username: 'user_name_123' },
     })
 
     expect(response.statusCode).toBe(200)
     const body = JSON.parse(response.payload)
     expect(body.available).toBe(true)
+  })
+
+  it('should return 400 for username with period (not allowed)', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/check',
+      query: { username: 'user.name' },
+    })
+
+    expect(response.statusCode).toBe(400)
   })
 })

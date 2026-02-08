@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { prisma } from '../../database'
 import type { ServerInstance } from '../../lib/fastify'
+import { authenticate, optionalAuthenticate, type AuthenticatedRequest } from '../../lib/auth'
 import { buildPaginationResponse, calculatePagination } from '../../lib/pagination'
 import {
   fileExists,
@@ -27,6 +28,7 @@ export default async function (fastify: ServerInstance) {
   fastify.post(
     '/signed-url',
     {
+      preHandler: [authenticate],
       schema: {
         tags: ['Whisper'],
         summary: '署名付きURL生成',
@@ -34,12 +36,14 @@ export default async function (fastify: ServerInstance) {
         body: signedUrlRequestSchema,
         response: {
           200: signedUrlResponseSchema,
+          401: errorResponseSchema,
           404: errorResponseSchema,
         },
       },
     },
     async (request, reply) => {
-      const { fileName, userId } = request.body
+      const { fileName } = request.body
+      const userId = (request as AuthenticatedRequest).user.sub
 
       // ユーザー存在確認
       const user = await prisma.user.findUnique({
@@ -72,6 +76,7 @@ export default async function (fastify: ServerInstance) {
   fastify.post(
     '/',
     {
+      preHandler: [authenticate],
       schema: {
         tags: ['Whisper'],
         summary: '音声投稿作成',
@@ -80,12 +85,14 @@ export default async function (fastify: ServerInstance) {
         response: {
           201: createWhisperResponseSchema,
           400: errorResponseSchema,
+          401: errorResponseSchema,
           404: errorResponseSchema,
         },
       },
     },
     async (request, reply) => {
-      const { userId, fileName, duration } = request.body
+      const { fileName, duration } = request.body
+      const userId = (request as AuthenticatedRequest).user.sub
 
       // ユーザー存在確認
       const user = await prisma.user.findUnique({
@@ -142,6 +149,7 @@ export default async function (fastify: ServerInstance) {
   fastify.get(
     '/',
     {
+      preHandler: [authenticate],
       schema: {
         tags: ['Whisper'],
         summary: '音声投稿一覧',
@@ -149,15 +157,41 @@ export default async function (fastify: ServerInstance) {
         querystring: listWhispersQuerySchema,
         response: {
           200: listWhispersResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
         },
       },
     },
     async (request, reply) => {
-      const { page, limit, userId } = request.query
+      const { page, limit, userId: targetUserId } = request.query
+      const currentUserId = (request as AuthenticatedRequest).user.sub
 
       const { skip, take } = calculatePagination({ page, limit })
 
-      const where = userId ? { userId } : {}
+      // targetUserIdが指定されている場合、プライバシーチェック
+      if (targetUserId && targetUserId !== currentUserId) {
+        const targetUser = await prisma.user.findUnique({
+          where: { id: targetUserId },
+          select: { id: true, isPrivate: true },
+        })
+
+        if (targetUser?.isPrivate) {
+          const isFollower = await prisma.follow.findUnique({
+            where: {
+              followerId_followingId: {
+                followerId: currentUserId,
+                followingId: targetUserId,
+              },
+            },
+          })
+
+          if (!isFollower) {
+            return reply.status(403).send({ message: 'このユーザーの投稿を表示する権限がありません' })
+          }
+        }
+      }
+
+      const where = targetUserId ? { userId: targetUserId } : {}
 
       const [whispers, total] = await Promise.all([
         prisma.whisper.findMany({
@@ -197,6 +231,7 @@ export default async function (fastify: ServerInstance) {
   fastify.get(
     '/:whisperId/audio-url',
     {
+      preHandler: [authenticate],
       schema: {
         tags: ['Whisper'],
         summary: '再生用署名付きURL取得',
@@ -206,19 +241,43 @@ export default async function (fastify: ServerInstance) {
         }),
         response: {
           200: audioUrlResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
           404: errorResponseSchema,
         },
       },
     },
     async (request, reply) => {
       const { whisperId } = request.params as { whisperId: string }
+      const currentUserId = (request as AuthenticatedRequest).user.sub
 
       const whisper = await prisma.whisper.findUnique({
         where: { id: whisperId },
+        include: {
+          user: {
+            select: { id: true, isPrivate: true },
+          },
+        },
       })
 
       if (!whisper) {
         return reply.status(404).send({ message: '投稿が見つかりません' })
+      }
+
+      // 鍵垢の場合、フォロワーかオーナーのみアクセス可能
+      if (whisper.user.isPrivate && whisper.userId !== currentUserId) {
+        const isFollower = await prisma.follow.findUnique({
+          where: {
+            followerId_followingId: {
+              followerId: currentUserId,
+              followingId: whisper.userId,
+            },
+          },
+        })
+
+        if (!isFollower) {
+          return reply.status(403).send({ message: 'この投稿を再生する権限がありません' })
+        }
       }
 
       const expiresInMinutes = 60

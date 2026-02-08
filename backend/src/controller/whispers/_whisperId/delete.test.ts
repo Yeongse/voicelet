@@ -1,9 +1,28 @@
 import Fastify from 'fastify'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { prisma } from '../../../database'
+import type { AuthenticatedRequest } from '../../../lib/auth'
 import deleteController from './controller'
+
+// 現在の認証ユーザーを保持
+let currentAuthUserId: string | null = null
+
+// auth moduleをモック
+vi.mock('../../../lib/auth', () => ({
+  authenticate: vi.fn(async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!currentAuthUserId) {
+      return reply.status(401).send({ message: '認証が必要です' })
+    }
+    ;(request as AuthenticatedRequest).user = {
+      sub: currentAuthUserId,
+      email: 'test@test.com',
+      iat: 0,
+      exp: 0,
+    }
+  }),
+}))
 
 // storage serviceをモック
 vi.mock('../../../services/storage', () => ({
@@ -55,9 +74,10 @@ describe('DELETE /api/whispers/:whisperId - ストーリー削除API', () => {
   })
 
   it('オーナーはストーリーを削除できる', async () => {
+    currentAuthUserId = ownerUser.id
     const response = await app.inject({
       method: 'DELETE',
-      url: `/${whisper.id}?userId=${ownerUser.id}`,
+      url: `/${whisper.id}`,
     })
 
     expect(response.statusCode).toBe(200)
@@ -80,9 +100,10 @@ describe('DELETE /api/whispers/:whisperId - ストーリー削除API', () => {
       },
     })
 
+    currentAuthUserId = ownerUser.id
     const response = await app.inject({
       method: 'DELETE',
-      url: `/${whisper.id}?userId=${ownerUser.id}`,
+      url: `/${whisper.id}`,
     })
 
     expect(response.statusCode).toBe(200)
@@ -95,9 +116,10 @@ describe('DELETE /api/whispers/:whisperId - ストーリー削除API', () => {
   })
 
   it('オーナー以外は削除できない', async () => {
+    currentAuthUserId = otherUser.id
     const response = await app.inject({
       method: 'DELETE',
-      url: `/${whisper.id}?userId=${otherUser.id}`,
+      url: `/${whisper.id}`,
     })
 
     expect(response.statusCode).toBe(403)
@@ -112,9 +134,10 @@ describe('DELETE /api/whispers/:whisperId - ストーリー削除API', () => {
   })
 
   it('存在しないストーリーは404を返す', async () => {
+    currentAuthUserId = ownerUser.id
     const response = await app.inject({
       method: 'DELETE',
-      url: `/non-existent-id?userId=${ownerUser.id}`,
+      url: `/non-existent-id`,
     })
 
     expect(response.statusCode).toBe(404)
@@ -122,12 +145,13 @@ describe('DELETE /api/whispers/:whisperId - ストーリー削除API', () => {
     expect(body.message).toBeDefined()
   })
 
-  it('userIdが指定されていない場合は400を返す', async () => {
+  it('認証がない場合は401を返す', async () => {
+    currentAuthUserId = null
     const response = await app.inject({
       method: 'DELETE',
       url: `/${whisper.id}`,
     })
 
-    expect(response.statusCode).toBe(400)
+    expect(response.statusCode).toBe(401)
   })
 })

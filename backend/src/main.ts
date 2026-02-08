@@ -3,6 +3,8 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import fastifyAutoload from '@fastify/autoload'
 import fastifyCors from '@fastify/cors'
+import fastifyHelmet from '@fastify/helmet'
+import fastifyRateLimit from '@fastify/rate-limit'
 import fastifySwagger from '@fastify/swagger'
 import fastifySwaggerUi from '@fastify/swagger-ui'
 import Fastify from 'fastify'
@@ -43,6 +45,29 @@ async function buildApp() {
 
   // JWT認証の設定
   await registerJwtAuth(app)
+
+  // セキュリティヘッダーの設定
+  await app.register(fastifyHelmet, {
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+
+  // レートリミットの設定
+  await app.register(fastifyRateLimit, {
+    max: 100, // 1分間に100リクエストまで
+    timeWindow: '1 minute',
+    errorResponseBuilder: () => ({
+      message: 'リクエストが多すぎます。しばらくしてから再度お試しください。',
+    }),
+  })
 
   // CORSの設定
   await app.register(fastifyCors, {

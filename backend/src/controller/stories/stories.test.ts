@@ -1,9 +1,28 @@
 import Fastify from 'fastify'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod'
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { prisma } from '../../database'
+import type { AuthenticatedRequest } from '../../lib/auth'
 import storiesController from './controller'
+
+// 現在の認証ユーザーを保持
+let currentAuthUserId: string | null = null
+
+// auth moduleをモック
+vi.mock('../../lib/auth', () => ({
+  authenticate: vi.fn(async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!currentAuthUserId) {
+      return reply.status(401).send({ message: '認証が必要です' })
+    }
+    ;(request as AuthenticatedRequest).user = {
+      sub: currentAuthUserId,
+      email: 'test@test.com',
+      iat: 0,
+      exp: 0,
+    }
+  }),
+}))
 
 describe('GET /api/stories - フォロー中ユーザーストーリーAPI', () => {
   let app: FastifyInstance
@@ -77,9 +96,10 @@ describe('GET /api/stories - フォロー中ユーザーストーリーAPI', () 
   })
 
   it('視聴済み・未視聴の両方の投稿が返される', async () => {
+    currentAuthUserId = viewerUser.id
     const response = await app.inject({
       method: 'GET',
-      url: `/?userId=${viewerUser.id}`,
+      url: '/',
     })
 
     const body = JSON.parse(response.body)
@@ -89,9 +109,10 @@ describe('GET /api/stories - フォロー中ユーザーストーリーAPI', () 
   })
 
   it('isViewedフラグで視聴済みかどうかを判別できる', async () => {
+    currentAuthUserId = viewerUser.id
     const response = await app.inject({
       method: 'GET',
-      url: `/?userId=${viewerUser.id}`,
+      url: '/',
     })
 
     const body = JSON.parse(response.body)
@@ -107,9 +128,10 @@ describe('GET /api/stories - フォロー中ユーザーストーリーAPI', () 
   })
 
   it('hasUnviewedフラグで未視聴投稿の有無を判別できる', async () => {
+    currentAuthUserId = viewerUser.id
     const response = await app.inject({
       method: 'GET',
-      url: `/?userId=${viewerUser.id}`,
+      url: '/',
     })
 
     const body = JSON.parse(response.body)
@@ -126,9 +148,10 @@ describe('GET /api/stories - フォロー中ユーザーストーリーAPI', () 
       },
     })
 
+    currentAuthUserId = viewerUser.id
     const response = await app.inject({
       method: 'GET',
-      url: `/?userId=${viewerUser.id}`,
+      url: '/',
     })
 
     const body = JSON.parse(response.body)
@@ -144,9 +167,10 @@ describe('GET /api/stories - フォロー中ユーザーストーリーAPI', () 
       data: { expiresAt: yesterday },
     })
 
+    currentAuthUserId = viewerUser.id
     const response = await app.inject({
       method: 'GET',
-      url: `/?userId=${viewerUser.id}`,
+      url: '/',
     })
 
     const body = JSON.parse(response.body)

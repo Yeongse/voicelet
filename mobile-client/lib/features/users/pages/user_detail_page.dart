@@ -254,7 +254,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
     );
   }
 
-  void _playStory(DiscoverStoriesResponse response, Profile profile, int startIndex) {
+  Future<void> _playStory(DiscoverStoriesResponse response, Profile profile, int startIndex) async {
     // UserStoryオブジェクトを作成
     final userStory = UserStory(
       user: StoryUser(
@@ -266,8 +266,10 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
       hasUnviewed: response.hasUnviewed,
     );
 
+    final currentUserId = ref.read(currentUserIdProvider);
+
     // StoryViewerPageに遷移
-    Navigator.of(context).push(
+    await Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
             StoryViewerPage(story: userStory),
@@ -277,6 +279,11 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
         transitionDuration: const Duration(milliseconds: 200),
       ),
     );
+
+    // ストーリービューワーから戻ったらデータを更新
+    if (currentUserId != null && mounted) {
+      ref.invalidate(userStoriesProvider((userId: widget.userId, currentUserId: currentUserId)));
+    }
   }
 
   Widget _buildStatItem({

@@ -1,9 +1,28 @@
 import Fastify from 'fastify'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod'
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { prisma } from '../../database'
+import type { AuthenticatedRequest } from '../../lib/auth'
 import discoverController from './controller'
+
+// 現在の認証ユーザーを保持
+let currentAuthUserId: string | null = null
+
+// auth moduleをモック
+vi.mock('../../lib/auth', () => ({
+  authenticate: vi.fn(async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!currentAuthUserId) {
+      return reply.status(401).send({ message: '認証が必要です' })
+    }
+    ;(request as AuthenticatedRequest).user = {
+      sub: currentAuthUserId,
+      email: 'test@test.com',
+      iat: 0,
+      exp: 0,
+    }
+  }),
+}))
 
 describe('GET /api/discover - おすすめユーザー一覧API', () => {
   let app: FastifyInstance
@@ -77,9 +96,10 @@ describe('GET /api/discover - おすすめユーザー一覧API', () => {
     // 未視聴Whisperを削除（視聴済みのみにする）
     await prisma.whisper.delete({ where: { id: unviewedWhisper.id } })
 
+    currentAuthUserId = viewerUser.id
     const response = await app.inject({
       method: 'GET',
-      url: `/?userId=${viewerUser.id}&page=1&limit=10`,
+      url: '/?page=1&limit=10',
     })
 
     const body = JSON.parse(response.body)
@@ -89,9 +109,10 @@ describe('GET /api/discover - おすすめユーザー一覧API', () => {
   })
 
   it('未視聴Whisperを持つユーザーはhasUnviewedがtrueになる', async () => {
+    currentAuthUserId = viewerUser.id
     const response = await app.inject({
       method: 'GET',
-      url: `/?userId=${viewerUser.id}&page=1&limit=10`,
+      url: '/?page=1&limit=10',
     })
 
     const body = JSON.parse(response.body)
@@ -115,9 +136,10 @@ describe('GET /api/discover - おすすめユーザー一覧API', () => {
       data: { expiresAt: yesterday },
     })
 
+    currentAuthUserId = viewerUser.id
     const response = await app.inject({
       method: 'GET',
-      url: `/?userId=${viewerUser.id}&page=1&limit=10`,
+      url: '/?page=1&limit=10',
     })
 
     const body = JSON.parse(response.body)
@@ -132,9 +154,10 @@ describe('GET /api/discover - おすすめユーザー一覧API', () => {
       data: { isPrivate: true },
     })
 
+    currentAuthUserId = viewerUser.id
     const response = await app.inject({
       method: 'GET',
-      url: `/?userId=${viewerUser.id}&page=1&limit=10`,
+      url: '/?page=1&limit=10',
     })
 
     const body = JSON.parse(response.body)
@@ -150,9 +173,10 @@ describe('GET /api/discover - おすすめユーザー一覧API', () => {
     })
 
     // 鍵アカウント時は表示されない
+    currentAuthUserId = viewerUser.id
     const response1 = await app.inject({
       method: 'GET',
-      url: `/?userId=${viewerUser.id}&page=1&limit=10`,
+      url: '/?page=1&limit=10',
     })
     const body1 = JSON.parse(response1.body)
     expect(body1.data).toHaveLength(0)
@@ -166,7 +190,7 @@ describe('GET /api/discover - おすすめユーザー一覧API', () => {
     // 公開後は表示される
     const response2 = await app.inject({
       method: 'GET',
-      url: `/?userId=${viewerUser.id}&page=1&limit=10`,
+      url: '/?page=1&limit=10',
     })
     const body2 = JSON.parse(response2.body)
     expect(body2.data).toHaveLength(1)
@@ -237,9 +261,10 @@ describe('GET /api/discover/:targetUserId/stories - おすすめユーザース�
   })
 
   it('視聴済み・未視聴の両方の投稿が返される', async () => {
+    currentAuthUserId = viewerUser.id
     const response = await app.inject({
       method: 'GET',
-      url: `/${targetUser.id}/stories?userId=${viewerUser.id}`,
+      url: `/${targetUser.id}/stories`,
     })
 
     const body = JSON.parse(response.body)
@@ -248,9 +273,10 @@ describe('GET /api/discover/:targetUserId/stories - おすすめユーザース�
   })
 
   it('isViewedフラグで視聴済みかどうかを判別できる', async () => {
+    currentAuthUserId = viewerUser.id
     const response = await app.inject({
       method: 'GET',
-      url: `/${targetUser.id}/stories?userId=${viewerUser.id}`,
+      url: `/${targetUser.id}/stories`,
     })
 
     const body = JSON.parse(response.body)
@@ -272,9 +298,10 @@ describe('GET /api/discover/:targetUserId/stories - おすすめユーザース�
       },
     })
 
+    currentAuthUserId = viewerUser.id
     const response = await app.inject({
       method: 'GET',
-      url: `/${targetUser.id}/stories?userId=${viewerUser.id}`,
+      url: `/${targetUser.id}/stories`,
     })
 
     const body = JSON.parse(response.body)

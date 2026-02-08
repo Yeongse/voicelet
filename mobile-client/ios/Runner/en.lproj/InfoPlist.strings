@@ -1,0 +1,10 @@
+/* English localization for iOS permissions and app info */
+
+/* App name */
+"CFBundleDisplayName" = "Voicelet";
+
+/* Microphone permission */
+"NSMicrophoneUsageDescription" = "Microphone access is required to record audio";
+
+/* Camera permission */
+"NSCameraUsageDescription" = "Camera access is used to scan QR codes to follow users";

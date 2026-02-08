@@ -5,7 +5,7 @@ export const usernameCheckQuerySchema = z.object({
     .string()
     .min(3, 'ユーザー名は3文字以上です')
     .max(30, 'ユーザー名は30文字以下です')
-    .regex(/^[a-zA-Z0-9_.]+$/, '半角英数字、アンダースコア、ピリオドのみ使用できます'),
+    .regex(/^[a-zA-Z0-9_]+$/, '半角英数字とアンダースコアのみ使用できます'),
 })
 
 export const usernameCheckResponseSchema = z.object({

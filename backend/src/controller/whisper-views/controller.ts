@@ -1,5 +1,6 @@
 import { prisma } from '../../database'
 import type { ServerInstance } from '../../lib/fastify'
+import { authenticate, type AuthenticatedRequest } from '../../lib/auth'
 import { errorResponseSchema, viewBodySchema, viewResponseSchema } from './schema'
 
 export default async function (fastify: ServerInstance) {
@@ -7,6 +8,7 @@ export default async function (fastify: ServerInstance) {
   fastify.post(
     '/',
     {
+      preHandler: [authenticate],
       schema: {
         tags: ['WhisperViews'],
         summary: '視聴履歴記録',
@@ -15,11 +17,13 @@ export default async function (fastify: ServerInstance) {
         response: {
           200: viewResponseSchema,
           201: viewResponseSchema,
+          401: errorResponseSchema,
         },
       },
     },
     async (request, reply) => {
-      const { userId, whisperId } = request.body as { userId: string; whisperId: string }
+      const { whisperId } = request.body as { whisperId: string }
+      const userId = (request as AuthenticatedRequest).user.sub
 
       // 既存レコードを先に確認
       const existing = await prisma.whisperView.findUnique({

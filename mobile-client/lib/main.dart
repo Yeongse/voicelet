@@ -18,7 +18,6 @@ import 'features/home/pages/story_viewer_page.dart';
 import 'features/home/pages/my_story_viewer_page.dart';
 import 'features/home/models/home_models.dart';
 import 'features/auth/pages/login_page.dart';
-import 'features/auth/pages/signin_page.dart';
 import 'features/auth/pages/signup_page.dart';
 import 'features/auth/pages/onboarding_page.dart';
 import 'features/profile/pages/profile_page.dart';
@@ -53,10 +52,6 @@ final _router = GoRouter(
     GoRoute(
       path: '/login',
       builder: (context, state) => const LoginPage(),
-    ),
-    GoRoute(
-      path: '/auth/signin',
-      builder: (context, state) => const SignInPage(),
     ),
     GoRoute(
       path: '/auth/signup',

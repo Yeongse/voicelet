@@ -25,13 +25,20 @@ class RewardAdStatusNotifier extends StateNotifier<AsyncValue<RewardAdStatus>> {
 
   /// ステータスを取得
   Future<void> fetchStatus() async {
-    state = const AsyncValue.loading();
+    // 既にデータがある場合は静かに更新（ローディング状態を表示しない）
+    final hasData = state.valueOrNull != null;
+    if (!hasData) {
+      state = const AsyncValue.loading();
+    }
     try {
       final apiService = _ref.read(rewardAdApiServiceProvider);
       final status = await apiService.getStatus();
       state = AsyncValue.data(status);
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      // エラー時は既存のデータがあればそれを維持
+      if (!hasData) {
+        state = AsyncValue.error(e, st);
+      }
     }
   }
 

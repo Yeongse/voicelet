@@ -1,5 +1,6 @@
 import { prisma } from '../../../../database'
 import type { ServerInstance } from '../../../../lib/fastify'
+import { generateAvatarDownloadSignedUrl } from '../../../../services/storage'
 import {
   errorResponseSchema,
   viewersParamsSchema,
@@ -62,12 +63,25 @@ export default async function (fastify: ServerInstance) {
         orderBy: { viewedAt: 'desc' },
       })
 
-      const viewers = views.map((view) => ({
-        id: view.user.id,
-        name: view.user.name ?? '',
-        avatarUrl: view.user.avatarPath,
-        viewedAt: view.viewedAt.toISOString(),
-      }))
+      // 署名付きURLを並列で生成
+      const viewers = await Promise.all(
+        views.map(async (view) => {
+          let avatarUrl: string | null = null
+          if (view.user.avatarPath) {
+            try {
+              avatarUrl = await generateAvatarDownloadSignedUrl(view.user.avatarPath, 60)
+            } catch (err) {
+              fastify.log.warn({ err, avatarPath: view.user.avatarPath }, 'Failed to generate avatar URL')
+            }
+          }
+          return {
+            id: view.user.id,
+            name: view.user.name ?? '',
+            avatarUrl,
+            viewedAt: view.viewedAt.toISOString(),
+          }
+        }),
+      )
 
       return reply.send({
         data: viewers,

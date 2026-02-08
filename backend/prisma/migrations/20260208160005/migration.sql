@@ -68,6 +68,19 @@ CREATE TABLE "reward_ad_usages" (
     CONSTRAINT "reward_ad_usages_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "legal_consents" (
+    "id" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "terms_of_service_version" TEXT NOT NULL,
+    "privacy_policy_version" TEXT NOT NULL,
+    "consented_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "ip_address" TEXT,
+    "user_agent" TEXT,
+
+    CONSTRAINT "legal_consents_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
@@ -119,6 +132,12 @@ CREATE INDEX "reward_ad_usages_user_id_idx" ON "reward_ad_usages"("user_id");
 -- CreateIndex
 CREATE INDEX "reward_ad_usages_usage_date_idx" ON "reward_ad_usages"("usage_date");
 
+-- CreateIndex
+CREATE INDEX "legal_consents_user_id_idx" ON "legal_consents"("user_id");
+
+-- CreateIndex
+CREATE INDEX "legal_consents_consented_at_idx" ON "legal_consents"("consented_at");
+
 -- AddForeignKey
 ALTER TABLE "whispers" ADD CONSTRAINT "whispers_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -142,3 +161,6 @@ ALTER TABLE "follow_requests" ADD CONSTRAINT "follow_requests_target_id_fkey" FO
 
 -- AddForeignKey
 ALTER TABLE "reward_ad_usages" ADD CONSTRAINT "reward_ad_usages_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "legal_consents" ADD CONSTRAINT "legal_consents_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

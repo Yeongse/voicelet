@@ -50,8 +50,16 @@ export const publicProfileResponseSchema = z.object({
 })
 
 /**
+ * 法的同意情報スキーマ
+ */
+export const legalConsentSchema = z.object({
+  termsOfServiceVersion: z.string().min(1, '利用規約バージョンは必須です'),
+  privacyPolicyVersion: z.string().min(1, 'プライバシーポリシーバージョンは必須です'),
+})
+
+/**
  * プロフィール新規登録リクエストスキーマ
- * 表示名は必須、usernameは必須
+ * 表示名は必須、usernameは必須、法的同意は必須
  */
 export const registerProfileRequestSchema = z.object({
   username: usernameSchema,
@@ -71,6 +79,7 @@ export const registerProfileRequestSchema = z.object({
     )
     .optional(),
   avatarPath: z.string().optional(),
+  legalConsent: legalConsentSchema,
 })
 
 /**

@@ -15,9 +15,12 @@ class ProfileApiService {
   }
 
   /// プロフィールを新規登録（ユーザーをDBに永続化）
+  /// legalConsentには利用規約とプライバシーポリシーのバージョンを含む
   Future<Profile> registerProfile({
     required String username,
     required String name,
+    required String termsOfServiceVersion,
+    required String privacyPolicyVersion,
     String? bio,
     String? birthMonth,
     String? avatarPath,
@@ -25,6 +28,10 @@ class ProfileApiService {
     final data = <String, dynamic>{
       'username': username,
       'name': name,
+      'legalConsent': {
+        'termsOfServiceVersion': termsOfServiceVersion,
+        'privacyPolicyVersion': privacyPolicyVersion,
+      },
     };
     if (bio != null) data['bio'] = bio;
     if (birthMonth != null) data['birthMonth'] = birthMonth;

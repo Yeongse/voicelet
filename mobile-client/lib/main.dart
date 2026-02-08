@@ -12,7 +12,6 @@ import 'features/users/pages/user_detail_page.dart';
 import 'features/recording/pages/recording_page.dart';
 import 'features/recording/pages/preview_page.dart';
 import 'features/splash/pages/splash_page.dart';
-import 'features/whisper/pages/whisper_list_page.dart';
 import 'features/home/pages/home_page.dart';
 import 'features/home/pages/story_viewer_page.dart';
 import 'features/home/pages/my_story_viewer_page.dart';
@@ -26,6 +25,7 @@ import 'features/follow/pages/follow_requests_page.dart';
 import 'features/follow/pages/follow_list_page.dart';
 import 'features/search/pages/search_page.dart';
 import 'features/qr_code/pages/qr_code_page.dart';
+import 'features/legal/pages/legal_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -99,10 +99,6 @@ final _router = GoRouter(
       },
     ),
     GoRoute(
-      path: '/dev/whispers',
-      builder: (context, state) => const WhisperListPage(),
-    ),
-    GoRoute(
       path: '/home',
       builder: (context, state) => const HomePage(),
     ),
@@ -141,6 +137,18 @@ final _router = GoRouter(
     GoRoute(
       path: '/qr-code',
       builder: (context, state) => const QrCodePage(),
+    ),
+    GoRoute(
+      path: '/legal/privacy-policy',
+      builder: (context, state) => const LegalPage(
+        type: LegalDocumentType.privacyPolicy,
+      ),
+    ),
+    GoRoute(
+      path: '/legal/terms-of-service',
+      builder: (context, state) => const LegalPage(
+        type: LegalDocumentType.termsOfService,
+      ),
     ),
   ],
 );

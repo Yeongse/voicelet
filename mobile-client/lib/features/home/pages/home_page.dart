@@ -1,8 +1,10 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../ads/providers/ad_provider.dart';
 import '../../tutorial/configs/tutorial_content.dart';
 import '../../tutorial/models/tutorial_screen.dart';
 import '../../tutorial/providers/tutorial_provider.dart';
@@ -149,6 +151,8 @@ class _HomePageState extends ConsumerState<HomePage>
   }
 
   void _openProfileDrawer() {
+    // ドロワーを開く前に広告ステータスを再取得
+    ref.read(rewardAdStatusProvider.notifier).fetchStatus();
     _scaffoldKey.currentState?.openEndDrawer();
   }
 
@@ -157,57 +161,179 @@ class _HomePageState extends ConsumerState<HomePage>
   }
 
   void _navigateToStoryViewer(UserStory story) {
-    // セッション中に視聴したストーリーIDを取得
-    final viewedStoryIds = ref.read(viewedStoryIdsProvider);
     final viewedUserIds = ref.read(viewedUserIdsProvider);
+    final viewedStoryIds = ref.read(viewedStoryIdsProvider);
 
-    // ユーザーが全投稿視聴済みとしてマークされているか確認
-    if (viewedUserIds.contains(story.user.id)) {
+    // このユーザーの全投稿が視聴済みかチェック
+    final isFullyViewedInSession = viewedUserIds.contains(story.user.id);
+    final allStoriesViewed = story.stories.every(
+      (s) => s.isViewed || viewedStoryIds.contains(s.id),
+    );
+
+    if (isFullyViewedInSession || allStoriesViewed) {
       _showAlreadyViewedToast();
       return;
     }
 
-    // 未視聴のストーリーが残っているか確認
-    // (サーバーからのisViewedフラグ + セッション中に視聴したストーリー)
-    final hasUnviewed = story.stories.any((s) =>
-        !s.isViewed && !viewedStoryIds.contains(s.id));
-
-    if (!hasUnviewed) {
-      _showAlreadyViewedToast();
-      return;
-    }
     context.push('/story-viewer', extra: {'story': story});
   }
 
   void _showAlreadyViewedToast() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              Icons.check_circle_outline_rounded,
-              color: AppTheme.info,
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'すべて視聴済みです',
-              style: TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 14,
+    showCupertinoDialog(
+      context: context,
+      builder: (dialogContext) => Consumer(
+        builder: (context, ref, _) {
+          final statusAsync = ref.watch(rewardAdStatusProvider);
+
+          return statusAsync.when(
+            data: (status) {
+              final remainingCount = status.remainingCount;
+              return CupertinoAlertDialog(
+                title: const Text('視聴済み'),
+                content: Text(
+                  remainingCount > 0
+                      ? 'このユーザーの投稿はすべて視聴済みです。\n\n動画広告を視聴して、視聴回数を回復しますか？\n（本日残り$remainingCount回）'
+                      : 'このユーザーの投稿はすべて視聴済みです。\n\n本日の広告視聴上限に達しました。\n（朝5時(JST)に回復します）',
+                ),
+                actions: [
+                  CupertinoDialogAction(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    child: const Text('閉じる'),
+                  ),
+                  if (remainingCount > 0)
+                    CupertinoDialogAction(
+                      onPressed: () {
+                        Navigator.of(dialogContext).pop();
+                        _handleWatchAd();
+                      },
+                      child: const Text('広告を見る'),
+                    ),
+                ],
+              );
+            },
+            loading: () => CupertinoAlertDialog(
+              title: const Text('視聴済み'),
+              content: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CupertinoActivityIndicator(),
+                  SizedBox(width: 16),
+                  Text('読み込み中...'),
+                ],
               ),
+              actions: [
+                CupertinoDialogAction(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('閉じる'),
+                ),
+              ],
             ),
-          ],
-        ),
-        backgroundColor: AppTheme.bgElevated,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        ),
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 2),
+            error: (_, _) => CupertinoAlertDialog(
+              title: const Text('視聴済み'),
+              content: const Text('このユーザーの投稿はすべて視聴済みです。'),
+              actions: [
+                CupertinoDialogAction(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('閉じる'),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
+  }
+
+  Future<void> _handleWatchAd() async {
+    final adService = ref.read(adServiceProvider);
+    final statusNotifier = ref.read(rewardAdStatusProvider.notifier);
+
+    // ローディングダイアログを表示
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('広告を読み込み中...'),
+          ],
+        ),
+      ),
+    );
+
+    // 広告がロードされていなければプリロードを待つ
+    if (!adService.isRewardedAdReady) {
+      await adService.preloadRewardedAd();
+
+      if (!adService.isRewardedAdReady) {
+        if (mounted) {
+          Navigator.of(context).pop(); // ローディングダイアログを閉じる
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('広告の読み込みに失敗しました'),
+              backgroundColor: AppTheme.error,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    if (mounted) {
+      Navigator.of(context).pop(); // ローディングダイアログを閉じる
+    }
+
+    try {
+      // 広告を表示
+      final earnedReward = await adService.showRewardedAd();
+
+      if (!earnedReward) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('広告の視聴が完了しませんでした')),
+          );
+        }
+        return;
+      }
+
+      // 視聴完了 → APIを呼び出して履歴をクリア
+      final response = await statusNotifier.useReward();
+
+      if (response != null && mounted) {
+        // ローカルの視聴状態をクリア
+        ref.read(viewedStoryIdsProvider.notifier).state = {};
+        ref.read(viewedUserIdsProvider.notifier).state = {};
+
+        // ストーリーリストを更新
+        ref.invalidate(storiesProvider);
+        ref.invalidate(discoverProvider);
+
+        showCupertinoDialog(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('視聴履歴をクリア'),
+            content: Text('${response.clearedCount}件の視聴履歴をクリアしました。\nもう一度投稿を視聴できます！'),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('エラーが発生しました'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
   }
 
   void _navigateToMyStoryViewer(MyWhisper whisper) {
@@ -217,20 +343,28 @@ class _HomePageState extends ConsumerState<HomePage>
   }
 
   Future<void> _handleDiscoverUserTap(DiscoverUser user) async {
-    // サーバーからのhasUnviewedとセッション中の状態を確認
     final viewedUserIds = ref.read(viewedUserIdsProvider);
-    final isFullyViewedInSession = viewedUserIds.contains(user.id);
-    final hasUnviewed = user.hasUnviewed && !isFullyViewedInSession;
 
-    if (!hasUnviewed) {
+    // このユーザーが全投稿視聴済みとしてマークされているかチェック
+    if (viewedUserIds.contains(user.id) || !user.hasUnviewed) {
       _showAlreadyViewedToast();
       return;
     }
 
-    // おすすめユーザーのストーリーを取得して再生
     final story = await ref.read(discoverUserStoriesProvider(user.id).future);
     if (story != null && mounted) {
-      _navigateToStoryViewer(story);
+      // 取得したストーリーも視聴済みかチェック
+      final viewedStoryIds = ref.read(viewedStoryIdsProvider);
+      final allStoriesViewed = story.stories.every(
+        (s) => s.isViewed || viewedStoryIds.contains(s.id),
+      );
+
+      if (allStoriesViewed) {
+        _showAlreadyViewedToast();
+        return;
+      }
+
+      context.push('/story-viewer', extra: {'story': story});
     }
   }
 
@@ -355,40 +489,6 @@ class _HomePageState extends ConsumerState<HomePage>
             ),
           ),
           const Spacer(),
-          // 開発用ボタン
-          GestureDetector(
-            onTap: () => context.go('/dev/whispers'),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppTheme.warning.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.developer_mode_rounded,
-                    size: 14,
-                    color: AppTheme.warning,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'DEV',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.warning,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
           // チュートリアル復習ボタン
           GestureDetector(
             onTap: () => _showTutorial(isReview: true),

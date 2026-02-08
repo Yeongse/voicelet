@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sign_in_button/sign_in_button.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../legal/providers/legal_consent_provider.dart';
 import '../providers/auth_provider.dart';
 
 /// 認証画面（外部認証プロバイダー選択）
@@ -20,6 +21,12 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
   String? _error;
 
   Future<void> _signUpWithGoogle() async {
+    final hasConsented = ref.read(legalConsentProvider);
+    if (!hasConsented) {
+      setState(() => _error = '利用規約とプライバシーポリシーに同意してください');
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _error = null;
@@ -145,17 +152,10 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                   ),
                 ],
                 const Spacer(flex: 2),
-                // 利用規約
+                // 利用規約同意チェックボックス
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40),
-                  child: Text(
-                    'ログインすることで、利用規約とプライバシーポリシーに同意したことになります。',
-                    style: TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 12,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: _buildConsentCheckbox(context),
                 ),
                 const SizedBox(height: 32),
               ],
@@ -166,4 +166,106 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
     );
   }
 
+  Widget _buildConsentCheckbox(BuildContext context) {
+    final hasConsented = ref.watch(legalConsentProvider);
+
+    return GestureDetector(
+      onTap: () {
+        ref.read(legalConsentProvider.notifier).state = !hasConsented;
+        if (_error != null) {
+          setState(() => _error = null);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: hasConsented
+                ? AppTheme.accentPrimary.withValues(alpha: 0.5)
+                : AppTheme.textSecondary.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: Checkbox(
+                value: hasConsented,
+                onChanged: (value) {
+                  ref.read(legalConsentProvider.notifier).state = value ?? false;
+                  if (_error != null) {
+                    setState(() => _error = null);
+                  }
+                },
+                activeColor: AppTheme.accentPrimary,
+                checkColor: Colors.white,
+                side: BorderSide(
+                  color: AppTheme.textSecondary,
+                  width: 1.5,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    WidgetSpan(
+                      child: GestureDetector(
+                        onTap: () => context.push('/legal/terms-of-service'),
+                        child: Text(
+                          '利用規約',
+                          style: TextStyle(
+                            color: AppTheme.accentPrimary,
+                            fontSize: 13,
+                            decoration: TextDecoration.underline,
+                            decorationColor: AppTheme.accentPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    TextSpan(
+                      text: 'と',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                    WidgetSpan(
+                      child: GestureDetector(
+                        onTap: () => context.push('/legal/privacy-policy'),
+                        child: Text(
+                          'プライバシーポリシー',
+                          style: TextStyle(
+                            color: AppTheme.accentPrimary,
+                            fontSize: 13,
+                            decoration: TextDecoration.underline,
+                            decorationColor: AppTheme.accentPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    TextSpan(
+                      text: 'に同意します',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

@@ -37,7 +37,7 @@ export default async function (fastify: ServerInstance) {
     async (request, reply) => {
       const userId = request.user.sub
       const email = request.user.email
-      const { username, name, bio, birthMonth, avatarPath } = request.body
+      const { username, name, bio, birthMonth, avatarPath, legalConsent } = request.body
 
       // 既にユーザーが存在するかチェック
       const existingUser = await prisma.user.findUnique({
@@ -62,17 +62,37 @@ export default async function (fastify: ServerInstance) {
         return reply.status(409).send({ message: 'このユーザー名は既に使用されています' })
       }
 
-      // 新規ユーザーを作成
-      const user = await prisma.user.create({
-        data: {
-          id: userId,
-          email: email || '',
-          username,
-          name,
-          bio: bio || null,
-          birthMonth: birthMonth || null,
-          avatarPath: avatarPath || null,
-        },
+      // IPアドレスとUser-Agentを取得
+      const ipAddress = request.headers['x-forwarded-for']?.toString().split(',')[0] || request.ip
+      const userAgent = request.headers['user-agent'] || null
+
+      // トランザクションでユーザーと同意履歴を作成
+      const user = await prisma.$transaction(async (tx) => {
+        // 新規ユーザーを作成
+        const newUser = await tx.user.create({
+          data: {
+            id: userId,
+            email: email || '',
+            username,
+            name,
+            bio: bio || null,
+            birthMonth: birthMonth || null,
+            avatarPath: avatarPath || null,
+          },
+        })
+
+        // 同意履歴を記録
+        await tx.legalConsent.create({
+          data: {
+            userId: newUser.id,
+            termsOfServiceVersion: legalConsent.termsOfServiceVersion,
+            privacyPolicyVersion: legalConsent.privacyPolicyVersion,
+            ipAddress,
+            userAgent,
+          },
+        })
+
+        return newUser
       })
 
       // アバター画像の署名付きURLを生成

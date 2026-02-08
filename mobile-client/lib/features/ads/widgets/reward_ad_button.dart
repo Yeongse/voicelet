@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -30,9 +31,12 @@ class _RewardAdButtonState extends ConsumerState<RewardAdButton> {
   @override
   void initState() {
     super.initState();
-    // 初回ステータス取得
+    // データがまだロードされていない場合のみ取得
     Future.microtask(() {
-      ref.read(rewardAdStatusProvider.notifier).fetchStatus();
+      final status = ref.read(rewardAdStatusProvider);
+      if (status is AsyncLoading || status is AsyncError) {
+        ref.read(rewardAdStatusProvider.notifier).fetchStatus();
+      }
     });
   }
 
@@ -116,50 +120,19 @@ class _RewardAdButtonState extends ConsumerState<RewardAdButton> {
   }
 
   void _showCompletionDialog(int clearedCount) {
-    showDialog(
+    showCupertinoDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.bgSecondary,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Row(
-          children: [
-            Icon(
-              Icons.check_circle_rounded,
-              color: AppTheme.success,
-              size: 28,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              '視聴履歴をクリア',
-              style: TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('視聴履歴をクリア'),
         content: Text(
           clearedCount > 0
               ? '$clearedCount件の視聴履歴をクリアしました。\nもう一度投稿を視聴できます！'
               : 'クリアする視聴履歴がありませんでした。',
-          style: TextStyle(
-            color: AppTheme.textSecondary,
-            fontSize: 15,
-          ),
         ),
         actions: [
-          TextButton(
+          CupertinoDialogAction(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'OK',
-              style: TextStyle(
-                color: AppTheme.accentPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            child: const Text('OK'),
           ),
         ],
       ),
@@ -231,7 +204,7 @@ class _RewardAdButtonState extends ConsumerState<RewardAdButton> {
                           const SizedBox(height: 2),
                           Text(
                             isDisabled
-                                ? '本日の利用上限に達しました'
+                                ? '朝5時(JST)に回復します'
                                 : '広告を見て履歴をリセット',
                             style: TextStyle(
                               fontSize: 12,

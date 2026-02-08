@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { prisma } from '../../database'
 import type { ServerInstance } from '../../lib/fastify'
 import { authenticate, type AuthenticatedRequest } from '../../lib/auth'
+import { generateAvatarDownloadSignedUrl } from '../../services/storage'
 import { discoverQuerySchema, discoverResponseSchema, discoverStoriesResponseSchema, errorResponseSchema } from './schema'
 
 export default async function (fastify: ServerInstance) {
@@ -94,19 +95,30 @@ export default async function (fastify: ServerInstance) {
 
       const paginatedUsers = sortedUsers.slice(skip, skip + limit)
 
-      const data = paginatedUsers.map((u) => {
-        // 未視聴のWhisperがあるかチェック
-        const hasUnviewed = u.whispers.some((w) => w.views.length === 0)
-        return {
-          id: u.id,
-          name: u.name ?? '',
-          bio: u.bio,
-          avatarUrl: u.avatarPath,
-          whisperCount: u._count.whispers,
-          latestWhisperAt: u.whispers[0]?.createdAt.toISOString() || '',
-          hasUnviewed,
-        }
-      })
+      // 署名付きURLを並列で生成
+      const data = await Promise.all(
+        paginatedUsers.map(async (u) => {
+          // 未視聴のWhisperがあるかチェック
+          const hasUnviewed = u.whispers.some((w) => w.views.length === 0)
+          let avatarUrl: string | null = null
+          if (u.avatarPath) {
+            try {
+              avatarUrl = await generateAvatarDownloadSignedUrl(u.avatarPath, 60)
+            } catch (err) {
+              fastify.log.warn({ err, avatarPath: u.avatarPath }, 'Failed to generate avatar URL')
+            }
+          }
+          return {
+            id: u.id,
+            name: u.name ?? '',
+            bio: u.bio,
+            avatarUrl,
+            whisperCount: u._count.whispers,
+            latestWhisperAt: u.whispers[0]?.createdAt.toISOString() || '',
+            hasUnviewed,
+          }
+        }),
+      )
 
       return reply.send({
         data,
@@ -183,19 +195,35 @@ export default async function (fastify: ServerInstance) {
       })
 
       if (whispers.length === 0) {
+        let avatarUrl: string | null = null
+        if (targetUser.avatarPath) {
+          try {
+            avatarUrl = await generateAvatarDownloadSignedUrl(targetUser.avatarPath, 60)
+          } catch (err) {
+            fastify.log.warn({ err, avatarPath: targetUser.avatarPath }, 'Failed to generate avatar URL')
+          }
+        }
         const user = {
           id: targetUser.id,
           name: targetUser.name ?? '',
-          avatarUrl: targetUser.avatarPath,
+          avatarUrl,
         }
         return reply.send({ user, stories: [], hasUnviewed: false })
       }
 
       const firstUser = whispers[0].user
+      let avatarUrl: string | null = null
+      if (firstUser.avatarPath) {
+        try {
+          avatarUrl = await generateAvatarDownloadSignedUrl(firstUser.avatarPath, 60)
+        } catch (err) {
+          fastify.log.warn({ err, avatarPath: firstUser.avatarPath }, 'Failed to generate avatar URL')
+        }
+      }
       const user = {
         id: firstUser.id,
         name: firstUser.name ?? '',
-        avatarUrl: firstUser.avatarPath,
+        avatarUrl,
       }
       const stories = whispers.map((w) => ({
         id: w.id,

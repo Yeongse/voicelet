@@ -49,6 +49,47 @@ function getNextResetTimeJST(now: Date = new Date()): Date {
   return new Date(appDayStart.getTime() + 24 * 60 * 60 * 1000)
 }
 
+/**
+ * JST午前5時を基準とした「アプリ日付」を文字列で取得（YYYY-MM-DD形式）
+ * DBのDATE型との比較に使用
+ */
+function getAppDayDateString(now: Date = new Date()): string {
+  // JSTに変換（UTC + 9時間）
+  const jstOffset = 9 * 60 * 60 * 1000
+  const jstNow = new Date(now.getTime() + jstOffset)
+
+  // JST基準の年月日時を取得
+  const jstYear = jstNow.getUTCFullYear()
+  const jstMonth = jstNow.getUTCMonth()
+  const jstDate = jstNow.getUTCDate()
+  const jstHour = jstNow.getUTCHours()
+
+  // 午前5時より前なら前日
+  let year = jstYear
+  let month = jstMonth
+  let date = jstDate
+  if (jstHour < RESET_HOUR_JST) {
+    const prevDay = new Date(Date.UTC(jstYear, jstMonth, jstDate - 1))
+    year = prevDay.getUTCFullYear()
+    month = prevDay.getUTCMonth()
+    date = prevDay.getUTCDate()
+  }
+
+  // YYYY-MM-DD形式
+  return `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`
+}
+
+/**
+ * DBから取得したDATE型をYYYY-MM-DD文字列に変換
+ */
+function dateToString(date: Date): string {
+  // DATE型はUTC midnight で格納されているので、そのまま取得
+  const year = date.getUTCFullYear()
+  const month = date.getUTCMonth()
+  const day = date.getUTCDate()
+  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
 export default async function (fastify: ServerInstance) {
   // GET /api/reward-ads/status - リワード広告ステータス取得
   fastify.get(
@@ -68,7 +109,7 @@ export default async function (fastify: ServerInstance) {
     async (request, reply) => {
       const userId = (request as AuthenticatedRequest).user.sub
       const now = new Date()
-      const appDayStart = getAppDayStartJST(now)
+      const appDayDateStr = getAppDayDateString(now)
       const nextResetAt = getNextResetTimeJST(now)
 
       // ユーザーの使用履歴を取得
@@ -80,9 +121,9 @@ export default async function (fastify: ServerInstance) {
       let todayClearedCount = 0
 
       if (usage) {
-        // usageDate が今日のアプリ日付と一致するか確認
-        const usageDayStart = getAppDayStartJST(usage.usageDate)
-        if (usageDayStart.getTime() === appDayStart.getTime()) {
+        // usageDate が今日のアプリ日付と一致するか確認（文字列比較）
+        const usageDateStr = dateToString(usage.usageDate)
+        if (usageDateStr === appDayDateStr) {
           // 同じ日なら使用回数を反映
           remainingCount = Math.max(0, DAILY_REWARD_LIMIT - usage.usageCount)
         }
@@ -116,8 +157,7 @@ export default async function (fastify: ServerInstance) {
     async (request, reply) => {
       const userId = (request as AuthenticatedRequest).user.sub
       const now = new Date()
-      const appDayStart = getAppDayStartJST(now)
-      const appDayEnd = new Date(appDayStart.getTime() + 24 * 60 * 60 * 1000)
+      const appDayDateStr = getAppDayDateString(now)
       const nextResetAt = getNextResetTimeJST(now)
 
       // トランザクションで使用回数チェックと更新を実行
@@ -131,8 +171,9 @@ export default async function (fastify: ServerInstance) {
         let isNewDay = true
 
         if (usage) {
-          const usageDayStart = getAppDayStartJST(usage.usageDate)
-          if (usageDayStart.getTime() === appDayStart.getTime()) {
+          // 文字列比較で日付を確認
+          const usageDateStr = dateToString(usage.usageDate)
+          if (usageDateStr === appDayDateStr) {
             // 同じ日
             currentUsageCount = usage.usageCount
             isNewDay = false
@@ -151,29 +192,28 @@ export default async function (fastify: ServerInstance) {
         // 使用回数を更新
         const newUsageCount = isNewDay ? 1 : currentUsageCount + 1
 
+        // usageDateはDATE型なので、日付部分のみを保存（UTCミッドナイト）
+        const usageDateForDb = new Date(`${appDayDateStr}T00:00:00.000Z`)
+
         await tx.rewardAdUsage.upsert({
           where: { userId },
           create: {
             userId,
             usageCount: 1,
-            usageDate: appDayStart,
+            usageDate: usageDateForDb,
             lastUsedAt: now,
           },
           update: {
             usageCount: newUsageCount,
-            usageDate: appDayStart,
+            usageDate: usageDateForDb,
             lastUsedAt: now,
           },
         })
 
-        // 当日の視聴履歴を削除
+        // 全ての視聴履歴を削除（日付範囲ではなく全て）
         const deleteResult = await tx.whisperView.deleteMany({
           where: {
             userId,
-            viewedAt: {
-              gte: appDayStart,
-              lt: appDayEnd,
-            },
           },
         })
 

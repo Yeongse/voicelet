@@ -2,9 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/dialogs.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../tutorial/configs/tutorial_content.dart';
+import '../../tutorial/models/tutorial_screen.dart';
+import '../../tutorial/providers/tutorial_provider.dart';
 import '../services/recording_service.dart';
 import '../widgets/waveform_indicator.dart';
 
@@ -31,12 +35,108 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
   late Animation<double> _pulseAnimation;
   late Animation<double> _fadeAnimation;
 
+  // チュートリアル用GlobalKeys
+  final GlobalKey _recordButtonKey = GlobalKey();
+  final GlobalKey _timerKey = GlobalKey();
+  final GlobalKey _waveformKey = GlobalKey();
+
+  bool _tutorialChecked = false;
+
   @override
   void initState() {
     super.initState();
     _recordingService = RecordingService();
     _setupListeners();
     _setupAnimations();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_tutorialChecked) {
+      _tutorialChecked = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _checkAndShowTutorial();
+      });
+    }
+  }
+
+  void _checkAndShowTutorial() {
+    final tutorialNotifier = ref.read(tutorialProvider.notifier);
+    final tutorialState = ref.read(tutorialProvider);
+
+    if (!tutorialState.isInitialized) {
+      Future.delayed(const Duration(milliseconds: 100), _checkAndShowTutorial);
+      return;
+    }
+
+    if (tutorialNotifier.shouldShowTutorial(TutorialScreen.recording)) {
+      _showTutorial();
+    }
+  }
+
+  void _showTutorial({bool isReview = false}) {
+    final targets = _buildTutorialTargets();
+    if (targets.isEmpty) return;
+
+    final tutorialNotifier = ref.read(tutorialProvider.notifier);
+
+    if (isReview) {
+      tutorialNotifier.showTutorialForReview(
+        context: context,
+        screen: TutorialScreen.recording,
+        targets: targets,
+      );
+    } else {
+      tutorialNotifier.showTutorial(
+        context: context,
+        screen: TutorialScreen.recording,
+        targets: targets,
+      );
+    }
+  }
+
+  List<TargetFocus> _buildTutorialTargets() {
+    const totalSteps = 4;
+    return [
+      TutorialContent.createTarget(
+        key: _recordButtonKey,
+        identify: 'record_button',
+        align: ContentAlign.top,
+        shape: ShapeLightFocus.Circle,
+        title: '録音ボタン',
+        description: 'タップで録音を開始します。\n録音中にもう一度タップすると停止します。',
+        currentStep: 0,
+        totalSteps: totalSteps,
+        onSkip: () => ref.read(tutorialProvider.notifier).dismiss(),
+      ),
+      TutorialContent.createTarget(
+        key: _timerKey,
+        identify: 'timer',
+        align: ContentAlign.bottom,
+        title: '録音時間',
+        description: '録音時間が表示されます。\n最大30秒まで録音できます。',
+        currentStep: 1,
+        totalSteps: totalSteps,
+        onSkip: () => ref.read(tutorialProvider.notifier).dismiss(),
+      ),
+      TutorialContent.createTarget(
+        key: _waveformKey,
+        identify: 'waveform',
+        align: ContentAlign.top,
+        title: '音声波形',
+        description: '録音中の声の大きさが\nリアルタイムで表示されます。',
+        currentStep: 2,
+        totalSteps: totalSteps,
+        onSkip: () => ref.read(tutorialProvider.notifier).dismiss(),
+      ),
+      // 完了メッセージ
+      TutorialContent.createCompletionTarget(
+        identify: 'completion',
+        currentStep: 3,
+        totalSteps: totalSteps,
+      ),
+    ];
   }
 
   void _setupAnimations() {
@@ -242,6 +342,24 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
                             }
                           },
                         ),
+                        const Spacer(),
+                        // チュートリアル復習ボタン
+                        GestureDetector(
+                          onTap: () => _showTutorial(isReview: true),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.help_outline_rounded,
+                              size: 20,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppTheme.space2),
                       ],
                     ),
                   ),
@@ -289,35 +407,38 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
                   const SizedBox(height: AppTheme.space8),
 
                   // 経過時間表示
-                  AnimatedBuilder(
-                    animation: _glowController,
-                    builder: (context, child) {
-                      final glowIntensity = isRecording
-                          ? 0.3 + (_glowController.value * 0.2)
-                          : 0.0;
-                      return Text(
-                        _formatDuration(_elapsed),
-                        style: TextStyle(
-                          fontFamily: 'JetBrains Mono',
-                          fontSize: 64,
-                          fontWeight: FontWeight.w300,
-                          color: AppTheme.textPrimary,
-                          letterSpacing: 6,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withValues(alpha: 0.6),
-                              blurRadius: 15,
-                              offset: const Offset(0, 2),
-                            ),
-                            if (isRecording)
+                  Container(
+                    key: _timerKey,
+                    child: AnimatedBuilder(
+                      animation: _glowController,
+                      builder: (context, child) {
+                        final glowIntensity = isRecording
+                            ? 0.3 + (_glowController.value * 0.2)
+                            : 0.0;
+                        return Text(
+                          _formatDuration(_elapsed),
+                          style: TextStyle(
+                            fontFamily: 'JetBrains Mono',
+                            fontSize: 64,
+                            fontWeight: FontWeight.w300,
+                            color: AppTheme.textPrimary,
+                            letterSpacing: 6,
+                            shadows: [
                               Shadow(
-                                color: AppTheme.error.withValues(alpha: glowIntensity),
-                                blurRadius: 30,
+                                color: Colors.black.withValues(alpha: 0.6),
+                                blurRadius: 15,
+                                offset: const Offset(0, 2),
                               ),
-                          ],
-                        ),
-                      );
-                    },
+                              if (isRecording)
+                                Shadow(
+                                  color: AppTheme.error.withValues(alpha: glowIntensity),
+                                  blurRadius: 30,
+                                ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   ),
                   const SizedBox(height: AppTheme.space2),
 
@@ -360,6 +481,7 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
 
                   // 波形インジケーター
                   Container(
+                    key: _waveformKey,
                     height: 100,
                     margin: const EdgeInsets.symmetric(
                       horizontal: AppTheme.space6,
@@ -512,6 +634,7 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
           return Transform.scale(
             scale: isRecording ? _pulseAnimation.value : 1.0,
             child: Container(
+              key: _recordButtonKey,
               width: 100,
               height: 100,
               decoration: BoxDecoration(

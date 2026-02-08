@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../tutorial/configs/tutorial_content.dart';
+import '../../tutorial/models/tutorial_screen.dart';
+import '../../tutorial/providers/tutorial_provider.dart';
 import '../models/home_models.dart';
 import '../providers/home_providers.dart';
 import '../widgets/my_story_section.dart';
@@ -22,6 +26,14 @@ class _HomePageState extends ConsumerState<HomePage>
   late TabController _tabController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  // チュートリアル用GlobalKeys
+  final GlobalKey _myStorySectionKey = GlobalKey();
+  final GlobalKey _tabBarKey = GlobalKey();
+  final GlobalKey _searchButtonKey = GlobalKey();
+  final GlobalKey _profileButtonKey = GlobalKey();
+
+  bool _tutorialChecked = false;
+
   @override
   void initState() {
     super.initState();
@@ -32,6 +44,108 @@ class _HomePageState extends ConsumerState<HomePage>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 初回のみチュートリアル表示をチェック
+    if (!_tutorialChecked) {
+      _tutorialChecked = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _checkAndShowTutorial();
+      });
+    }
+  }
+
+  void _checkAndShowTutorial() {
+    final tutorialNotifier = ref.read(tutorialProvider.notifier);
+    final tutorialState = ref.read(tutorialProvider);
+
+    if (!tutorialState.isInitialized) {
+      // 初期化待ち
+      Future.delayed(const Duration(milliseconds: 100), _checkAndShowTutorial);
+      return;
+    }
+
+    if (tutorialNotifier.shouldShowTutorial(TutorialScreen.home)) {
+      _showTutorial();
+    }
+  }
+
+  void _showTutorial({bool isReview = false}) {
+    final targets = _buildTutorialTargets();
+    if (targets.isEmpty) return;
+
+    final tutorialNotifier = ref.read(tutorialProvider.notifier);
+
+    if (isReview) {
+      tutorialNotifier.showTutorialForReview(
+        context: context,
+        screen: TutorialScreen.home,
+        targets: targets,
+      );
+    } else {
+      tutorialNotifier.showTutorial(
+        context: context,
+        screen: TutorialScreen.home,
+        targets: targets,
+      );
+    }
+  }
+
+  List<TargetFocus> _buildTutorialTargets() {
+    const totalSteps = 5;
+    return [
+      TutorialContent.createTarget(
+        key: _myStorySectionKey,
+        identify: 'my_story',
+        align: ContentAlign.bottom,
+        title: 'My Story',
+        description: 'あなたの声を録音して投稿できます。\n左端の「+」ボタンから新しいストーリーを作成しましょう。',
+        currentStep: 0,
+        totalSteps: totalSteps,
+        onSkip: () => ref.read(tutorialProvider.notifier).dismiss(),
+      ),
+      TutorialContent.createTarget(
+        key: _tabBarKey,
+        identify: 'tab_bar',
+        align: ContentAlign.bottom,
+        title: 'フィード切り替え',
+        description: '「フォロー中」でフォロー中のユーザーの投稿を、\n「おすすめ」で新しいユーザーを発見できます。',
+        currentStep: 1,
+        totalSteps: totalSteps,
+        onSkip: () => ref.read(tutorialProvider.notifier).dismiss(),
+      ),
+      TutorialContent.createTarget(
+        key: _searchButtonKey,
+        identify: 'search',
+        align: ContentAlign.bottom,
+        shape: ShapeLightFocus.Circle,
+        title: 'ユーザー検索',
+        description: 'ユーザー名や表示名で\n他のユーザーを検索できます。',
+        currentStep: 2,
+        totalSteps: totalSteps,
+        onSkip: () => ref.read(tutorialProvider.notifier).dismiss(),
+      ),
+      TutorialContent.createTarget(
+        key: _profileButtonKey,
+        identify: 'profile',
+        align: ContentAlign.bottom,
+        shape: ShapeLightFocus.Circle,
+        title: 'プロフィール',
+        description: 'プロフィールの確認・編集や\n各種設定にアクセスできます。',
+        currentStep: 3,
+        totalSteps: totalSteps,
+        onSkip: () => ref.read(tutorialProvider.notifier).dismiss(),
+      ),
+      // 完了メッセージ
+      TutorialContent.createCompletionTarget(
+        identify: 'home_completion',
+        currentStep: 4,
+        totalSteps: totalSteps,
+      ),
+    ];
   }
 
   void _openProfileDrawer() {
@@ -185,15 +299,21 @@ class _HomePageState extends ConsumerState<HomePage>
 
                 // My Storyセクション
                 const SizedBox(height: 8),
-                MyStorySection(
-                  onAddTap: _navigateToRecording,
-                  onWhisperTap: _navigateToMyStoryViewer,
+                Container(
+                  key: _myStorySectionKey,
+                  child: MyStorySection(
+                    onAddTap: _navigateToRecording,
+                    onWhisperTap: _navigateToMyStoryViewer,
+                  ),
                 ),
 
                 const SizedBox(height: 16),
 
                 // タブバー
-                _buildTabBar(),
+                Container(
+                  key: _tabBarKey,
+                  child: _buildTabBar(),
+                ),
 
                 // タブコンテンツ
                 Expanded(
@@ -269,8 +389,26 @@ class _HomePageState extends ConsumerState<HomePage>
             ),
           ),
           const SizedBox(width: 12),
+          // チュートリアル復習ボタン
+          GestureDetector(
+            onTap: () => _showTutorial(isReview: true),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.help_outline_rounded,
+                size: 20,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
           // 検索ボタン
           GestureDetector(
+            key: _searchButtonKey,
             onTap: () => context.push('/search'),
             child: Container(
               padding: const EdgeInsets.all(8),
@@ -287,9 +425,12 @@ class _HomePageState extends ConsumerState<HomePage>
           ),
           const SizedBox(width: 12),
           // プロフィールボタン
-          ProfileAvatarButton(
-            onTap: _openProfileDrawer,
-            size: 36,
+          Container(
+            key: _profileButtonKey,
+            child: ProfileAvatarButton(
+              onTap: _openProfileDrawer,
+              size: 36,
+            ),
           ),
         ],
       ),

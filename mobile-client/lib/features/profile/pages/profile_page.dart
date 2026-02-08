@@ -282,12 +282,12 @@ class _ProfileContent extends ConsumerWidget {
           ],
 
           // メールアドレス（自分のプロフィールのみ）
-          if (isMyProfile) ...[
+          if (isMyProfile && profile.email != null) ...[
             const SizedBox(height: 24),
             _buildInfoTile(
               icon: Icons.email_outlined,
               label: 'メールアドレス',
-              value: profile.email,
+              value: profile.email!,
             ),
           ],
 

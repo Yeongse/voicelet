@@ -7,7 +7,7 @@ part 'profile.g.dart';
 class Profile with _$Profile {
   const factory Profile({
     required String id,
-    required String email,
+    String? email, // 他ユーザーのプロフィールではnull（プライバシー保護）
     String? username,
     String? name,
     String? bio,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/shimmer.dart';
+import '../../ads/widgets/banner_ad_widget.dart';
 import '../models/home_models.dart';
 import '../providers/home_providers.dart';
 import 'story_avatar.dart';
@@ -21,10 +22,22 @@ class FollowingTab extends ConsumerWidget {
     final viewedUserIds = ref.watch(viewedUserIdsProvider);
     final viewedStoryIds = ref.watch(viewedStoryIdsProvider);
 
-    return storiesAsync.when(
-      data: (stories) => _buildContent(stories, viewedUserIds, viewedStoryIds),
-      loading: () => _buildLoading(),
-      error: (error, _) => _buildError(error),
+    return Column(
+      children: [
+        Expanded(
+          child: storiesAsync.when(
+            data: (stories) =>
+                _buildContent(stories, viewedUserIds, viewedStoryIds),
+            loading: () => _buildLoading(),
+            error: (error, _) => _buildError(error),
+          ),
+        ),
+        // バナー広告（画面下部に固定表示）
+        const SafeArea(
+          top: false,
+          child: BannerAdWidget(),
+        ),
+      ],
     );
   }
 

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/dialogs.dart';
+import '../../ads/widgets/reward_ad_button.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/models/profile.dart';
 import '../../follow/providers/follow_provider.dart';
@@ -186,6 +187,14 @@ class ProfileDrawer extends ConsumerWidget {
             context.push('/qr-code');
           },
         ),
+        const SizedBox(height: 16),
+        Divider(
+          color: AppTheme.textTertiary.withValues(alpha: 0.2),
+          height: 1,
+        ),
+        const SizedBox(height: 16),
+        // リワード広告ボタン（視聴履歴クリア機能）
+        const RewardAdButton(),
         const SizedBox(height: 16),
         Divider(
           color: AppTheme.textTertiary.withValues(alpha: 0.2),

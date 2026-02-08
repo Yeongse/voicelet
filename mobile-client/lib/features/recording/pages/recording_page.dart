@@ -97,7 +97,7 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
   }
 
   List<TargetFocus> _buildTutorialTargets() {
-    const totalSteps = 4;
+    const totalSteps = 3;
     return [
       TutorialContent.createTarget(
         key: _recordButtonKey,
@@ -128,13 +128,8 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
         description: '録音中の声の大きさが\nリアルタイムで表示されます。',
         currentStep: 2,
         totalSteps: totalSteps,
+        isLastStep: true,
         onSkip: () => ref.read(tutorialProvider.notifier).dismiss(),
-      ),
-      // 完了メッセージ
-      TutorialContent.createCompletionTarget(
-        identify: 'completion',
-        currentStep: 3,
-        totalSteps: totalSteps,
       ),
     ];
   }
@@ -625,18 +620,21 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
   }
 
   Widget _buildRecordButton(bool isRecording) {
-    return GestureDetector(
-      onTap: isRecording ? _stopRecording : _startRecording,
-      child: AnimatedBuilder(
-        animation: Listenable.merge([_pulseAnimation, _glowController]),
-        builder: (context, child) {
-          final glowIntensity = 0.3 + (_glowController.value * 0.2);
-          return Transform.scale(
-            scale: isRecording ? _pulseAnimation.value : 1.0,
-            child: Container(
-              key: _recordButtonKey,
-              width: 100,
-              height: 100,
+    return SizedBox(
+      key: _recordButtonKey,
+      width: 100,
+      height: 100,
+      child: GestureDetector(
+        onTap: isRecording ? _stopRecording : _startRecording,
+        child: AnimatedBuilder(
+          animation: Listenable.merge([_pulseAnimation, _glowController]),
+          builder: (context, child) {
+            final glowIntensity = 0.3 + (_glowController.value * 0.2);
+            return Transform.scale(
+              scale: isRecording ? _pulseAnimation.value : 1.0,
+              child: Container(
+                width: 100,
+                height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: isRecording
@@ -682,6 +680,7 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
             ),
           );
         },
+        ),
       ),
     );
   }

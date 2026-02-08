@@ -32,6 +32,7 @@ model User {
   views             WhisperView[]
   sentRequests      FollowRequest[]  @relation("requester")
   receivedRequests  FollowRequest[]  @relation("target")
+  rewardAdUsage     RewardAdUsage?
 
   @@map("users")
 }
@@ -113,4 +114,22 @@ model FollowRequest {
   @@index([requesterId])
   @@index([targetId])
   @@map("follow_requests")
+}
+
+// ===========================================
+// RewardAdUsage Model (リワード広告使用履歴)
+// ===========================================
+
+model RewardAdUsage {
+  id         String   @id @default(uuid())
+  userId     String   @unique @map("user_id")
+  usageCount Int      @default(0) @map("usage_count")
+  usageDate  DateTime @map("usage_date") @db.Date
+  lastUsedAt DateTime @map("last_used_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([usageDate])
+  @@map("reward_ad_usages")
 }

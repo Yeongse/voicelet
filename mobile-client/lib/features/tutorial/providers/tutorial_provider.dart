@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
-import '../../../core/utils/dialogs.dart';
 import '../models/tutorial_screen.dart';
 import '../models/tutorial_state.dart';
 import '../services/tutorial_service.dart';
@@ -127,26 +126,16 @@ class TutorialNotifier extends StateNotifier<TutorialState> {
     _tutorialCoachMark!.show(context: context);
   }
 
-  /// スキップ処理
+  /// スキップ処理（確認ダイアログなしで直接スキップ）
   Future<void> _handleSkip(
     BuildContext context,
     TutorialScreen screen,
     VoidCallback? onSkip,
   ) async {
-    final shouldSkip = await showConfirmAlertDialog(
-      context: context,
-      title: 'チュートリアルをスキップ',
-      message: 'チュートリアルをスキップしますか？\n設定からいつでも復習できます。',
-      confirmText: 'スキップする',
-      cancelText: '続ける',
-    );
-
-    if (shouldSkip) {
-      _tutorialCoachMark?.finish();
-      await _markCompleted(screen);
-      state = state.copyWith(isShowingTutorial: false);
-      onSkip?.call();
-    }
+    _tutorialCoachMark?.finish();
+    await _markCompleted(screen);
+    state = state.copyWith(isShowingTutorial: false);
+    onSkip?.call();
   }
 
   /// チュートリアル完了処理

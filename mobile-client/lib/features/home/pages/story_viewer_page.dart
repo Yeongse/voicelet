@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/dialogs.dart';
+import '../../ads/widgets/banner_ad_widget.dart';
 import '../models/home_models.dart';
 import '../providers/home_providers.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -391,7 +392,10 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
                     ),
                   ),
 
-                  const SizedBox(height: 32),
+                  // バナー広告
+                  const BannerAdWidget(),
+
+                  const SizedBox(height: 16),
                 ],
               ),
             ),

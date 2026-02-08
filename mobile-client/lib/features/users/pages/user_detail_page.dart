@@ -204,12 +204,16 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
         final hasStories = response.stories.isNotEmpty;
         final hasUnviewed = response.hasUnviewed;
         return GestureDetector(
-          onTap: hasStories ? () => _playStory(response, profile, 0) : null,
+          onTap: hasStories
+              ? (hasUnviewed
+                  ? () => _playStory(response, profile, 0)
+                  : _showAlreadyViewedToast)
+              : null,
           child: _buildAvatarWithBorder(profile, hasStories: hasStories, hasUnviewed: hasUnviewed),
         );
       },
       loading: () => _buildAvatarWithBorder(profile, hasStories: false, hasUnviewed: false),
-      error: (_, _) => _buildAvatarWithBorder(profile, hasStories: false, hasUnviewed: false),
+      error: (e, s) => _buildAvatarWithBorder(profile, hasStories: false, hasUnviewed: false),
     );
   }
 
@@ -250,6 +254,37 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
                 )
               : null,
         ),
+      ),
+    );
+  }
+
+  void _showAlreadyViewedToast() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              Icons.check_circle_outline_rounded,
+              color: AppTheme.info,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'すべて視聴済みです',
+              style: TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppTheme.bgElevated,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        ),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
       ),
     );
   }

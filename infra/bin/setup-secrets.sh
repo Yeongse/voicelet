@@ -3,21 +3,45 @@
 set -eu
 
 # ============================================
-# Supabase シークレット登録スクリプト
+# Secret Manager シークレット登録スクリプト
 # ============================================
+#
 # Usage:
-#   ./setup-secrets.sh <supabase_url> <supabase_service_key> <jwt_secret> <database_url>
+#   ./setup-secrets.sh <arg1> <arg2> <arg3> <arg4>
 #
-# Example:
-#   # JWT Secret を事前に生成
-#   openssl rand -base64 32
+# ============================================
+# 引数の順番
+# ============================================
+#   $1: SUPABASE_URL
+#       - Supabase Project URL
+#       - 取得場所: Supabase Dashboard → Settings → API → Project URL
+#       - 例: https://mjgfyoahdwpwblxqsztg.supabase.co
 #
-#   # シークレット登録
+#   $2: SUPABASE_SERVICE_KEY
+#       - Supabase service_role キー（管理者権限）
+#       - 取得場所: Supabase Dashboard → Settings → API → service_role key
+#       - 例: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+#
+#   $3: JWT_SECRET
+#       - JWT署名用のシークレット
+#       - 取得場所: Supabase Dashboard → Settings → API → JWT Secret
+#       - または自分で生成: openssl rand -base64 32
+#
+#   $4: DATABASE_URL
+#       - PostgreSQL接続文字列（Transaction pooler使用）
+#       - 取得場所: Supabase Dashboard → Settings → Database → Connection string → Transaction pooler
+#       - ⚠️ 重要: ポートは 6543 を使用すること（5432ではない）
+#       - 例: postgresql://postgres.xxxxx:[PASSWORD]@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres
+#
+# ============================================
+# 実行例
+# ============================================
 #   ./setup-secrets.sh \
-#     "https://xxxxx.supabase.co" \
-#     "eyJhbGciOiJIUzI1NiIs..." \
-#     "generated-jwt-secret" \
-#     "postgresql://postgres.xxxxx:password@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres"
+#     "https://mjgfyoahdwpwblxqsztg.supabase.co" \
+#     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+#     "your-jwt-secret-here" \
+#     "postgresql://postgres.mjgfyoahdwpwblxqsztg:[PASSWORD]@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres"
+#
 # ============================================
 
 SERVICE_NAME="${SERVICE_NAME:-voicelet}"

@@ -39,6 +39,16 @@ resource "google_cloud_run_v2_service" "this" {
         value = var.gcs_avatar_bucket_name
       }
 
+      env {
+        name  = "NODE_ENV"
+        value = "production"
+      }
+
+      env {
+        name  = "CORS_ORIGIN"
+        value = "*"
+      }
+
       # ============================================
       # 手動設定が必要な環境変数（Secret Manager経由）
       # デプロイ前に gcloud secrets versions add で値を設定すること
@@ -56,9 +66,9 @@ resource "google_cloud_run_v2_service" "this" {
         }
       }
 
-      # Supabase Service Key from Secret Manager
+      # Supabase Service Role Key from Secret Manager
       env {
-        name = "SUPABASE_SERVICE_KEY"
+        name = "SUPABASE_SERVICE_ROLE_KEY"
         value_source {
           secret_key_ref {
             secret  = "${var.service_name}-supabase-service-key"

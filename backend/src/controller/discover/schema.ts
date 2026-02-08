@@ -6,7 +6,6 @@ export const errorResponseSchema = z.object({
 
 // GET /api/discover
 export const discoverQuerySchema = z.object({
-  userId: z.string().min(1),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 })
@@ -31,4 +30,20 @@ export const discoverResponseSchema = z.object({
     hasNext: z.boolean(),
     hasPrev: z.boolean(),
   }),
+})
+
+// GET /api/discover/:targetUserId/stories
+export const discoverStoriesResponseSchema = z.object({
+  user: z.object({
+    id: z.string(),
+    name: z.string(),
+    avatarUrl: z.string().nullable(),
+  }).nullable(),
+  stories: z.array(z.object({
+    id: z.string(),
+    duration: z.number(),
+    createdAt: z.string(),
+    isViewed: z.boolean(),
+  })),
+  hasUnviewed: z.boolean(),
 })

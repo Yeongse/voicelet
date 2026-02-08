@@ -92,9 +92,10 @@ export default async function (fastify: ServerInstance) {
       }
 
       // 公開プロフィールはbirthMonthを含めない（ageのみ）
+      // メールアドレスは自分のプロフィールでのみ表示
       return reply.send({
         id: user.id,
-        email: user.email,
+        username: user.username,
         name: user.name,
         bio: user.bio,
         age: calculateAge(user.birthMonth),

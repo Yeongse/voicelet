@@ -5,9 +5,7 @@ export const errorResponseSchema = z.object({
 })
 
 // GET /api/stories
-export const storiesQuerySchema = z.object({
-  userId: z.string().min(1),
-})
+export const storiesQuerySchema = z.object({})
 
 export const storyItemSchema = z.object({
   id: z.string(),

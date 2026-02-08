@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../search/providers/username_check_provider.dart';
 import '../providers/profile_provider.dart';
 
 class ProfileEditPage extends ConsumerStatefulWidget {
@@ -15,12 +18,15 @@ class ProfileEditPage extends ConsumerStatefulWidget {
 
 class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
   final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
   final _nameController = TextEditingController();
   final _bioController = TextEditingController();
 
   int? _selectedYear;
   int? _selectedMonth;
   bool _isPrivate = false;
+  Timer? _usernameDebounce;
+  String? _originalUsername;
 
   final _imagePicker = ImagePicker();
 
@@ -32,6 +38,8 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
 
   Future<void> _loadProfile() async {
     final profileAsync = await ref.read(myProfileProvider.future);
+    _usernameController.text = profileAsync.username ?? '';
+    _originalUsername = profileAsync.username;
     _nameController.text = profileAsync.name ?? '';
     _bioController.text = profileAsync.bio ?? '';
 
@@ -52,9 +60,23 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
 
   @override
   void dispose() {
+    _usernameController.dispose();
+    _usernameDebounce?.cancel();
     _nameController.dispose();
     _bioController.dispose();
     super.dispose();
+  }
+
+  void _onUsernameChanged(String value) {
+    _usernameDebounce?.cancel();
+    _usernameDebounce = Timer(const Duration(milliseconds: 500), () {
+      final username = value.replaceAll(RegExp(r'^@'), '');
+      if (username != _originalUsername && username.length >= 3) {
+        ref.read(usernameCheckProvider.notifier).check(username);
+      } else {
+        ref.read(usernameCheckProvider.notifier).reset();
+      }
+    });
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -89,7 +111,10 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
       birthMonth = '$_selectedYear-${_selectedMonth.toString().padLeft(2, '0')}';
     }
 
+    final username = _usernameController.text.trim().replaceAll(RegExp(r'^@'), '');
+
     final success = await ref.read(profileUpdateProvider.notifier).updateProfile(
+      username: username.isNotEmpty && username != _originalUsername ? username : null,
       name: _nameController.text.trim(),
       bio: _bioController.text.trim(),
       birthMonth: birthMonth,
@@ -279,6 +304,12 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                 ),
                 const SizedBox(height: 32),
 
+                // ユーザー名
+                _buildLabel('ユーザー名'),
+                const SizedBox(height: 8),
+                _buildUsernameField(),
+                const SizedBox(height: 16),
+
                 // 表示名
                 _buildLabel('表示名 *'),
                 const SizedBox(height: 8),
@@ -456,6 +487,100 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildUsernameField() {
+    final usernameCheck = ref.watch(usernameCheckProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: _usernameController,
+          style: TextStyle(color: AppTheme.textPrimary),
+          decoration: _buildInputDecoration(hintText: 'username').copyWith(
+            prefixText: '@',
+            prefixStyle: TextStyle(color: AppTheme.textSecondary),
+            suffixIcon: _buildUsernameSuffix(usernameCheck),
+          ),
+          maxLength: 30,
+          onChanged: _onUsernameChanged,
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return null; // Optional field
+            }
+            final username = value.replaceAll(RegExp(r'^@'), '');
+            if (username.length < 3) {
+              return 'ユーザー名は3文字以上です';
+            }
+            if (!RegExp(r'^[a-zA-Z0-9_.]+$').hasMatch(username)) {
+              return '半角英数字、アンダースコア、ピリオドのみ使用できます';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 4),
+        Text(
+          _getUsernameHintText(usernameCheck),
+          style: TextStyle(
+            fontSize: 12,
+            color: _getUsernameHintColor(usernameCheck),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getUsernameHintText(UsernameAvailability state) {
+    switch (state) {
+      case UsernameAvailability.checking:
+        return '確認中...';
+      case UsernameAvailability.available:
+        return 'このユーザー名は使用可能です';
+      case UsernameAvailability.unavailable:
+        return 'このユーザー名は既に使用されています';
+      case UsernameAvailability.invalid:
+        return '無効なユーザー名です';
+      case UsernameAvailability.unknown:
+        return '半角英数字、アンダースコア、ピリオドのみ使用できます';
+    }
+  }
+
+  Color _getUsernameHintColor(UsernameAvailability state) {
+    switch (state) {
+      case UsernameAvailability.available:
+        return AppTheme.success;
+      case UsernameAvailability.unavailable:
+      case UsernameAvailability.invalid:
+        return AppTheme.error;
+      case UsernameAvailability.checking:
+      case UsernameAvailability.unknown:
+        return AppTheme.textSecondary;
+    }
+  }
+
+  Widget? _buildUsernameSuffix(UsernameAvailability state) {
+    switch (state) {
+      case UsernameAvailability.checking:
+        return Padding(
+          padding: const EdgeInsets.all(12),
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppTheme.accentPrimary,
+            ),
+          ),
+        );
+      case UsernameAvailability.available:
+        return Icon(Icons.check_circle, color: AppTheme.success);
+      case UsernameAvailability.unavailable:
+      case UsernameAvailability.invalid:
+        return Icon(Icons.cancel, color: AppTheme.error);
+      case UsernameAvailability.unknown:
+        return null;
+    }
   }
 
   Widget _buildLabel(String text) {

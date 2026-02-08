@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sign_in_button/sign_in_button.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 
-/// Sign Up画面（外部認証プロバイダー選択）
+/// 認証画面（外部認証プロバイダー選択）
+/// サインイン・サインアップ両方に対応
 class SignUpPage extends ConsumerStatefulWidget {
   const SignUpPage({super.key});
 
@@ -25,24 +27,6 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
 
     try {
       await ref.read(authProvider.notifier).signInWithGoogle();
-      // 認証状態の変更はref.listenで処理される
-    } catch (e) {
-      setState(() => _error = e.toString());
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  Future<void> _signUpWithApple() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      await ref.read(authProvider.notifier).signInWithApple();
       // 認証状態の変更はref.listenで処理される
     } catch (e) {
       setState(() => _error = e.toString());
@@ -106,46 +90,36 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                 const Spacer(flex: 2),
                 // タイトル
                 Text(
-                  'Create Account',
+                  'はじめよう',
                   style: TextStyle(
                     fontFamily: 'Quicksand',
                     fontSize: 32,
                     fontWeight: FontWeight.w600,
                     color: AppTheme.textPrimary,
-                    letterSpacing: 1.5,
+                    letterSpacing: 2.0,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'アカウントを作成して始めましょう',
+                  'アカウントを連携してログイン',
                   style: TextStyle(fontSize: 15, color: AppTheme.textSecondary),
                 ),
                 const Spacer(),
-                // 認証プロバイダーボタン
+                // Googleログインボタン
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 40),
-                  child: Column(
-                    children: [
-                      // Google
-                      _buildProviderButton(
-                        onPressed: _isLoading ? null : _signUpWithGoogle,
-                        icon: 'assets/icons/google.png',
-                        iconFallback: Icons.g_mobiledata_rounded,
-                        label: 'Continue with Google',
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black87,
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: SignInButton(
+                      Buttons.google,
+                      text: 'Googleでログイン',
+                      onPressed: _isLoading ? () {} : _signUpWithGoogle,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(26),
                       ),
-                      const SizedBox(height: 16),
-                      // Apple
-                      _buildProviderButton(
-                        onPressed: _isLoading ? null : _signUpWithApple,
-                        icon: 'assets/icons/apple.png',
-                        iconFallback: Icons.apple_rounded,
-                        label: 'Continue with Apple',
-                        backgroundColor: Colors.black,
-                        foregroundColor: Colors.white,
-                      ),
-                    ],
+                      elevation: 2,
+                    ),
                   ),
                 ),
                 // エラーメッセージ
@@ -170,17 +144,12 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                     ),
                   ),
                 ],
-                // ローディング
-                if (_isLoading) ...[
-                  const SizedBox(height: 24),
-                  CircularProgressIndicator(color: AppTheme.accentPrimary),
-                ],
                 const Spacer(flex: 2),
                 // 利用規約
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 40),
                   child: Text(
-                    'アカウントを作成することで、利用規約とプライバシーポリシーに同意したことになります。',
+                    'ログインすることで、利用規約とプライバシーポリシーに同意したことになります。',
                     style: TextStyle(
                       color: AppTheme.textSecondary,
                       fontSize: 12,
@@ -188,35 +157,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                     textAlign: TextAlign.center,
                   ),
                 ),
-                const SizedBox(height: 16),
-                // 既にアカウントがある場合
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 32),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '既にアカウントをお持ちの方は',
-                        style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 14,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () =>
-                            context.pushReplacement('/auth/signin'),
-                        child: Text(
-                          'Sign In',
-                          style: TextStyle(
-                            color: AppTheme.accentPrimary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                const SizedBox(height: 32),
               ],
             ),
           ),
@@ -225,46 +166,4 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
     );
   }
 
-  Widget _buildProviderButton({
-    required VoidCallback? onPressed,
-    required String icon,
-    required IconData iconFallback,
-    required String label,
-    required Color backgroundColor,
-    required Color foregroundColor,
-  }) {
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: backgroundColor,
-          foregroundColor: foregroundColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(26),
-          ),
-          elevation: 2,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              icon,
-              width: 24,
-              height: 24,
-              errorBuilder: (context, error, stackTrace) {
-                return Icon(iconFallback, size: 24);
-              },
-            ),
-            const SizedBox(width: 12),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

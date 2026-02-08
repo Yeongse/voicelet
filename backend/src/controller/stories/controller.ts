@@ -1,5 +1,6 @@
 import { prisma } from '../../database'
 import type { ServerInstance } from '../../lib/fastify'
+import { authenticate, type AuthenticatedRequest } from '../../lib/auth'
 import { errorResponseSchema, storiesQuerySchema, storiesResponseSchema } from './schema'
 
 export default async function (fastify: ServerInstance) {
@@ -7,6 +8,7 @@ export default async function (fastify: ServerInstance) {
   fastify.get(
     '/',
     {
+      preHandler: [authenticate],
       schema: {
         tags: ['Stories'],
         summary: 'フォロー中ユーザーのストーリー取得',
@@ -19,7 +21,7 @@ export default async function (fastify: ServerInstance) {
       },
     },
     async (request, reply) => {
-      const { userId } = request.query as { userId: string }
+      const userId = (request as AuthenticatedRequest).user.sub
 
       const user = await prisma.user.findUnique({ where: { id: userId } })
       if (!user) {

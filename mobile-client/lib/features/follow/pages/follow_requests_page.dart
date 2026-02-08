@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/dialogs.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../models/follow_models.dart';
 import '../providers/follow_provider.dart';
 
@@ -288,8 +289,15 @@ class _ReceivedRequestTileState extends ConsumerState<_ReceivedRequestTile> {
                   icon: Icon(Icons.check_circle, color: AppTheme.success),
                   onPressed: () {
                     final service = ref.read(followApiServiceProvider);
+                    final currentUserId = ref.read(currentUserIdProvider);
                     _handleAction(
-                      () => service.approveRequest(widget.request.id),
+                      () async {
+                        await service.approveRequest(widget.request.id);
+                        // 自分のフォロワー数を+1
+                        if (currentUserId != null) {
+                          adjustFollowCount(ref, currentUserId, followersDelta: 1);
+                        }
+                      },
                       'リクエストを承認しました',
                       '承認に失敗しました',
                     );

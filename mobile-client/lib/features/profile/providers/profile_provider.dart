@@ -56,6 +56,7 @@ class ProfileUpdateNotifier extends StateNotifier<ProfileUpdateState> {
 
   /// プロフィールを更新
   Future<bool> updateProfile({
+    String? username,
     String? name,
     String? bio,
     String? birthMonth,
@@ -65,6 +66,7 @@ class ProfileUpdateNotifier extends StateNotifier<ProfileUpdateState> {
       state = state.copyWith(isLoading: true, error: null);
 
       final profile = await _service.updateProfile(
+        username: username,
         name: name,
         bio: bio,
         birthMonth: birthMonth,

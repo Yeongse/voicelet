@@ -4,9 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/dialogs.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../models/follow_models.dart';
 import '../providers/follow_provider.dart';
-import '../widgets/user_list_tile.dart';
+import '../widgets/follow_button.dart';
 
 enum FollowListType { following, followers }
 
@@ -46,6 +47,9 @@ class _FollowListPageState extends ConsumerState<FollowListPage>
 
   @override
   Widget build(BuildContext context) {
+    final currentUserId = ref.watch(currentUserIdProvider);
+    final isOwnProfile = currentUserId == widget.userId;
+
     return Scaffold(
       backgroundColor: AppTheme.bgPrimary,
       appBar: AppBar(
@@ -66,18 +70,33 @@ class _FollowListPageState extends ConsumerState<FollowListPage>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _FollowingList(userId: widget.userId),
-          _FollowersList(userId: widget.userId),
+          _FollowingList(
+            userId: widget.userId,
+            currentUserId: currentUserId,
+            isOwnProfile: isOwnProfile,
+          ),
+          _FollowersList(
+            userId: widget.userId,
+            currentUserId: currentUserId,
+            isOwnProfile: isOwnProfile,
+          ),
         ],
       ),
     );
   }
 }
 
+/// フォロー中リスト
 class _FollowingList extends ConsumerWidget {
   final String userId;
+  final String? currentUserId;
+  final bool isOwnProfile;
 
-  const _FollowingList({required this.userId});
+  const _FollowingList({
+    required this.userId,
+    required this.currentUserId,
+    required this.isOwnProfile,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -117,8 +136,9 @@ class _FollowingList extends ConsumerWidget {
         itemCount: response.data.length,
         itemBuilder: (context, index) {
           final user = response.data[index];
-          return UserListTile(
+          return _UserListItem(
             user: user,
+            currentUserId: currentUserId,
             onTap: () => context.push('/users/${user.id}'),
           );
         },
@@ -127,7 +147,6 @@ class _FollowingList extends ConsumerWidget {
   }
 
   Widget _buildError(BuildContext context, WidgetRef ref, Object error) {
-    // 403エラーの場合は非公開メッセージを表示
     if (error.toString().contains('403')) {
       return Center(
         child: Column(
@@ -168,10 +187,17 @@ class _FollowingList extends ConsumerWidget {
   }
 }
 
+/// フォロワーリスト
 class _FollowersList extends ConsumerWidget {
   final String userId;
+  final String? currentUserId;
+  final bool isOwnProfile;
 
-  const _FollowersList({required this.userId});
+  const _FollowersList({
+    required this.userId,
+    required this.currentUserId,
+    required this.isOwnProfile,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -211,11 +237,21 @@ class _FollowersList extends ConsumerWidget {
         itemCount: response.data.length,
         itemBuilder: (context, index) {
           final user = response.data[index];
-          return UserListTile(
+
+          // 自分のフォロワーリストの場合は削除ボタンを表示
+          if (isOwnProfile) {
+            return _FollowerListItemWithRemove(
+              user: user,
+              listOwnerId: userId,
+              onTap: () => context.push('/users/${user.id}'),
+            );
+          }
+
+          // 他人のフォロワーリストの場合はフォローボタンを表示
+          return _UserListItem(
             user: user,
+            currentUserId: currentUserId,
             onTap: () => context.push('/users/${user.id}'),
-            showRemoveButton: true,
-            onRemove: () => _showRemoveDialog(context, ref, user),
           );
         },
       ),
@@ -261,12 +297,129 @@ class _FollowersList extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Future<void> _showRemoveDialog(
-    BuildContext context,
-    WidgetRef ref,
-    UserWithFollowStatus user,
-  ) async {
+/// 通常のユーザーリストアイテム（フォローボタン付き）
+class _UserListItem extends StatelessWidget {
+  final UserWithFollowStatus user;
+  final String? currentUserId;
+  final VoidCallback? onTap;
+
+  const _UserListItem({
+    required this.user,
+    required this.currentUserId,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // 自分自身の場合はボタンを表示しない
+    final isMe = user.id == currentUserId;
+
+    return ListTile(
+      onTap: onTap,
+      leading: CircleAvatar(
+        backgroundColor: AppTheme.bgTertiary,
+        backgroundImage: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+        child: user.avatarUrl == null
+            ? Icon(Icons.person, color: AppTheme.textTertiary)
+            : null,
+      ),
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(
+              user.name ?? '名前未設定',
+              style: TextStyle(color: AppTheme.textPrimary),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (user.isPrivate) ...[
+            const SizedBox(width: 4),
+            Icon(Icons.lock, size: 16, color: AppTheme.textTertiary),
+          ],
+        ],
+      ),
+      subtitle: user.username != null
+          ? Text(
+              '@${user.username}',
+              style: TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 12,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            )
+          : null,
+      trailing: isMe
+          ? null
+          : FollowButton(
+              userId: user.id,
+              initialStatus: user.followStatus,
+              isPrivate: user.isPrivate,
+              compact: true,
+            ),
+    );
+  }
+}
+
+/// フォロワー削除ボタン付きリストアイテム（自分のフォロワーリスト用）
+class _FollowerListItemWithRemove extends ConsumerWidget {
+  final UserWithFollowStatus user;
+  final String listOwnerId;
+  final VoidCallback? onTap;
+
+  const _FollowerListItemWithRemove({
+    required this.user,
+    required this.listOwnerId,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ListTile(
+      onTap: onTap,
+      leading: CircleAvatar(
+        backgroundColor: AppTheme.bgTertiary,
+        backgroundImage: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+        child: user.avatarUrl == null
+            ? Icon(Icons.person, color: AppTheme.textTertiary)
+            : null,
+      ),
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(
+              user.name ?? '名前未設定',
+              style: TextStyle(color: AppTheme.textPrimary),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (user.isPrivate) ...[
+            const SizedBox(width: 4),
+            Icon(Icons.lock, size: 16, color: AppTheme.textTertiary),
+          ],
+        ],
+      ),
+      subtitle: user.username != null
+          ? Text(
+              '@${user.username}',
+              style: TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 12,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            )
+          : null,
+      trailing: IconButton(
+        icon: Icon(Icons.close, color: AppTheme.textSecondary),
+        onPressed: () => _showRemoveDialog(context, ref),
+      ),
+    );
+  }
+
+  Future<void> _showRemoveDialog(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDestructiveConfirmDialog(
       context: context,
       message: '${user.name ?? 'このユーザー'}をフォロワーから削除しますか？',
@@ -277,7 +430,7 @@ class _FollowersList extends ConsumerWidget {
       try {
         final service = ref.read(followApiServiceProvider);
         await service.removeFollower(user.id);
-        ref.invalidate(followersListProvider((userId: userId, page: 1)));
+        ref.invalidate(followersListProvider((userId: listOwnerId, page: 1)));
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

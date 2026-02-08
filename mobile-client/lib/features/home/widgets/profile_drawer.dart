@@ -178,6 +178,14 @@ class ProfileDrawer extends ConsumerWidget {
             context.push('/follow-requests');
           },
         ),
+        _MenuTile(
+          icon: Icons.qr_code_rounded,
+          label: 'QRコード',
+          onTap: () {
+            Navigator.of(context).pop();
+            context.push('/qr-code');
+          },
+        ),
         const SizedBox(height: 16),
         Divider(
           color: AppTheme.textTertiary.withValues(alpha: 0.2),

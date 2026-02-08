@@ -18,12 +18,14 @@ import 'features/home/pages/story_viewer_page.dart';
 import 'features/home/pages/my_story_viewer_page.dart';
 import 'features/home/models/home_models.dart';
 import 'features/auth/pages/login_page.dart';
-import 'features/auth/pages/signin_page.dart';
 import 'features/auth/pages/signup_page.dart';
 import 'features/auth/pages/onboarding_page.dart';
 import 'features/profile/pages/profile_page.dart';
 import 'features/profile/pages/profile_edit_page.dart';
 import 'features/follow/pages/follow_requests_page.dart';
+import 'features/follow/pages/follow_list_page.dart';
+import 'features/search/pages/search_page.dart';
+import 'features/qr_code/pages/qr_code_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,10 +54,6 @@ final _router = GoRouter(
       builder: (context, state) => const LoginPage(),
     ),
     GoRoute(
-      path: '/auth/signin',
-      builder: (context, state) => const SignInPage(),
-    ),
-    GoRoute(
       path: '/auth/signup',
       builder: (context, state) => const SignUpPage(),
     ),
@@ -72,6 +70,17 @@ final _router = GoRouter(
       builder: (context, state) {
         final userId = state.pathParameters['userId']!;
         return UserDetailPage(userId: userId);
+      },
+    ),
+    GoRoute(
+      path: '/users/:userId/follow-list',
+      builder: (context, state) {
+        final userId = state.pathParameters['userId']!;
+        final extra = state.extra as Map<String, dynamic>?;
+        final initialType = extra?['initialType'] == 'followers'
+            ? FollowListType.followers
+            : FollowListType.following;
+        return FollowListPage(userId: userId, initialType: initialType);
       },
     ),
     GoRoute(
@@ -124,6 +133,14 @@ final _router = GoRouter(
     GoRoute(
       path: '/follow-requests',
       builder: (context, state) => const FollowRequestsPage(),
+    ),
+    GoRoute(
+      path: '/search',
+      builder: (context, state) => const SearchPage(),
+    ),
+    GoRoute(
+      path: '/qr-code',
+      builder: (context, state) => const QrCodePage(),
     ),
   ],
 );

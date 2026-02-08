@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/dialogs.dart';
 import '../models/home_models.dart';
 import '../providers/home_providers.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -108,76 +109,67 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
       final userId = ref.read(currentUserIdProvider);
 
       // 再生開始前に視聴記録APIを呼び出す（必須）
-      if (userId != null) {
-        try {
-          await apiService.recordView(userId: userId, whisperId: story.id);
-          // 視聴成功時にviewedStoryIdsProviderを更新
+      // userIdがnullの場合は再生不可
+      if (userId == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(
+                    Icons.error_outline_rounded,
+                    color: AppTheme.error,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'ログインが必要です',
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppTheme.bgElevated,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+              ),
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+          _closeViewer();
+        }
+        return;
+      }
+
+      try {
+        await apiService.recordView(userId: userId, whisperId: story.id);
+        // 視聴成功時にviewedStoryIdsProviderを更新
+        ref.read(viewedStoryIdsProvider.notifier).update((state) {
+          return {...state, story.id};
+        });
+      } catch (e) {
+        // 409エラー（既に視聴済み）の場合
+        if (e.toString().contains('409')) {
+          // 既に視聴済みの場合もviewedStoryIdsProviderに追加
           ref.read(viewedStoryIdsProvider.notifier).update((state) {
             return {...state, story.id};
           });
-        } catch (e) {
-          // 409エラー（既に視聴済み）の場合
-          if (e.toString().contains('409')) {
-            // 既に視聴済みの場合もviewedStoryIdsProviderに追加
-            ref.read(viewedStoryIdsProvider.notifier).update((state) {
-              return {...state, story.id};
-            });
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      Icon(
-                        Icons.check_circle_outline_rounded,
-                        color: AppTheme.info,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'この投稿は既に視聴済みです',
-                        style: TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                  backgroundColor: AppTheme.bgElevated,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                  ),
-                  margin: const EdgeInsets.all(16),
-                ),
-              );
-              // 次のストーリーに進む、なければ閉じる
-              if (_currentIndex < widget.story.stories.length - 1) {
-                setState(() {
-                  _currentIndex++;
-                  _isLoading = false;
-                });
-                _loadCurrentStory();
-                return;
-              } else {
-                _closeViewer();
-                return;
-              }
-            }
-          }
-          // その他のAPIエラーの場合は再生を中断
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Row(
                   children: [
                     Icon(
-                      Icons.error_outline_rounded,
-                      color: AppTheme.error,
+                      Icons.check_circle_outline_rounded,
+                      color: AppTheme.info,
                       size: 20,
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'エラーが発生しました',
+                      'この投稿は既に視聴済みです',
                       style: TextStyle(
                         color: AppTheme.textPrimary,
                         fontSize: 14,
@@ -193,12 +185,54 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
                 margin: const EdgeInsets.all(16),
               ),
             );
-            setState(() {
-              _isLoading = false;
-            });
+            // 次のストーリーに進む、なければ閉じる
+            if (_currentIndex < widget.story.stories.length - 1) {
+              setState(() {
+                _currentIndex++;
+                _isLoading = false;
+              });
+              _loadCurrentStory();
+              return;
+            } else {
+              _closeViewer();
+              return;
+            }
           }
-          return;
         }
+        // その他のAPIエラーの場合は再生を中断
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(
+                    Icons.error_outline_rounded,
+                    color: AppTheme.error,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'エラーが発生しました',
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppTheme.bgElevated,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+              ),
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+          setState(() {
+            _isLoading = false;
+          });
+        }
+        return;
       }
 
       // 視聴記録成功後のみ音声を再生
@@ -406,54 +440,76 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
     );
   }
 
+  Future<void> _navigateToProfile() async {
+    final confirmed = await showConfirmAlertDialog(
+      context: context,
+      title: 'プロフィールを表示',
+      message: '再生を終了してプロフィールページに移動しますか？',
+      confirmText: '表示する',
+    );
+
+    if (!confirmed || !mounted) return;
+
+    await _audioPlayer.stop();
+    _checkAndMarkUserAsFullyViewed();
+    if (!mounted) return;
+    context.pop();
+    context.push('/users/${widget.story.user.id}');
+  }
+
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          // ユーザーアバター
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: AppTheme.textPrimary, width: 2),
-            ),
-            child: ClipOval(
-              child: widget.story.user.avatarUrl != null
-                  ? Image.network(
-                      widget.story.user.avatarUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
-                    )
-                  : _buildDefaultAvatar(),
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          // ユーザー名
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          // ユーザーアバター + 名前（タップでプロフィールへ）
+          GestureDetector(
+            onTap: _navigateToProfile,
+            child: Row(
               children: [
-                Text(
-                  widget.story.user.name,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppTheme.textPrimary, width: 2),
+                  ),
+                  child: ClipOval(
+                    child: widget.story.user.avatarUrl != null
+                        ? Image.network(
+                            widget.story.user.avatarUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
+                          )
+                        : _buildDefaultAvatar(),
                   ),
                 ),
-                Text(
-                  _formatTime(widget.story.stories[_currentIndex].createdAt),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textSecondary,
-                  ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.story.user.name,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      _formatTime(widget.story.stories[_currentIndex].createdAt),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
+
+          const Spacer(),
 
           // 閉じるボタン
           IconButton(

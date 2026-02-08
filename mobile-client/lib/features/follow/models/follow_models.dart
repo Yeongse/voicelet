@@ -10,11 +10,33 @@ enum FollowStatus {
   requested,
 }
 
+/// ユーザーのフォロー状態（requestIdを含む）
+class UserFollowState {
+  final FollowStatus status;
+  final String? requestId;
+
+  const UserFollowState({
+    required this.status,
+    this.requestId,
+  });
+
+  UserFollowState copyWith({
+    FollowStatus? status,
+    String? requestId,
+  }) {
+    return UserFollowState(
+      status: status ?? this.status,
+      requestId: requestId,
+    );
+  }
+}
+
 /// フォロー情報付きユーザー
 @freezed
 class UserWithFollowStatus with _$UserWithFollowStatus {
   const factory UserWithFollowStatus({
     required String id,
+    String? username,
     String? name,
     String? bio,
     String? avatarUrl,
@@ -30,6 +52,7 @@ class UserWithFollowStatus with _$UserWithFollowStatus {
     );
     return UserWithFollowStatus(
       id: json['id'] as String,
+      username: json['username'] as String?,
       name: json['name'] as String?,
       bio: json['bio'] as String?,
       avatarUrl: json['avatarUrl'] as String?,

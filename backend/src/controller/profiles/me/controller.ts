@@ -37,7 +37,7 @@ export default async function (fastify: ServerInstance) {
     async (request, reply) => {
       const userId = request.user.sub
       const email = request.user.email
-      const { name, bio, birthMonth, avatarPath } = request.body
+      const { username, name, bio, birthMonth, avatarPath } = request.body
 
       // 既にユーザーが存在するかチェック
       const existingUser = await prisma.user.findUnique({
@@ -48,11 +48,26 @@ export default async function (fastify: ServerInstance) {
         return reply.status(409).send({ message: '既に登録済みです' })
       }
 
+      // usernameの重複チェック（case-insensitive）
+      const existingUsername = await prisma.user.findFirst({
+        where: {
+          username: {
+            equals: username,
+            mode: 'insensitive',
+          },
+        },
+      })
+
+      if (existingUsername) {
+        return reply.status(409).send({ message: 'このユーザー名は既に使用されています' })
+      }
+
       // 新規ユーザーを作成
       const user = await prisma.user.create({
         data: {
           id: userId,
           email: email || '',
+          username,
           name,
           bio: bio || null,
           birthMonth: birthMonth || null,
@@ -73,6 +88,7 @@ export default async function (fastify: ServerInstance) {
       return reply.status(201).send({
         id: user.id,
         email: user.email,
+        username: user.username,
         name: user.name,
         bio: user.bio,
         birthMonth: user.birthMonth,
@@ -138,6 +154,7 @@ export default async function (fastify: ServerInstance) {
       return reply.send({
         id: user.id,
         email: user.email,
+        username: user.username,
         name: user.name,
         bio: user.bio,
         birthMonth: user.birthMonth,
@@ -169,16 +186,37 @@ export default async function (fastify: ServerInstance) {
           200: myProfileResponseSchema,
           400: errorResponseSchema,
           401: errorResponseSchema,
+          409: errorResponseSchema,
         },
       },
     },
     async (request, reply) => {
       const userId = request.user.sub
-      const { name, bio, birthMonth, avatarPath, isPrivate } = request.body
+      const { username, name, bio, birthMonth, avatarPath, isPrivate } = request.body
+
+      // usernameが変更される場合、重複チェック
+      if (username !== undefined) {
+        const existingUsername = await prisma.user.findFirst({
+          where: {
+            username: {
+              equals: username,
+              mode: 'insensitive',
+            },
+            NOT: {
+              id: userId,
+            },
+          },
+        })
+
+        if (existingUsername) {
+          return reply.status(409).send({ message: 'このユーザー名は既に使用されています' })
+        }
+      }
 
       const user = await prisma.user.update({
         where: { id: userId },
         data: {
+          ...(username !== undefined && { username }),
           ...(name !== undefined && { name }),
           ...(bio !== undefined && { bio }),
           ...(birthMonth !== undefined && { birthMonth }),
@@ -208,6 +246,7 @@ export default async function (fastify: ServerInstance) {
       return reply.send({
         id: user.id,
         email: user.email,
+        username: user.username,
         name: user.name,
         bio: user.bio,
         birthMonth: user.birthMonth,

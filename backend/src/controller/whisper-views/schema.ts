@@ -5,7 +5,6 @@ export const errorResponseSchema = z.object({
 })
 
 export const viewBodySchema = z.object({
-  userId: z.string().min(1),
   whisperId: z.string().min(1),
 })
 

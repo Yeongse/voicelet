@@ -1,14 +1,11 @@
 import { z } from 'zod'
 import { prisma } from '../../../database'
 import type { ServerInstance } from '../../../lib/fastify'
+import { authenticate, type AuthenticatedRequest } from '../../../lib/auth'
 import { deleteWhisperFile } from '../../../services/storage'
 
 const errorResponseSchema = z.object({
   message: z.string(),
-})
-
-const deleteQuerySchema = z.object({
-  userId: z.string().min(1),
 })
 
 const deleteResponseSchema = z.object({
@@ -27,15 +24,15 @@ export default async function (fastify: ServerInstance) {
   fastify.delete(
     '/',
     {
+      preHandler: [authenticate],
       schema: {
         tags: ['Whisper'],
         summary: 'ストーリー削除',
         description: '指定されたWhisperを削除します。オーナーのみ実行可能。',
         params: paramsSchema,
-        querystring: deleteQuerySchema,
         response: {
           200: deleteResponseSchema,
-          400: errorResponseSchema,
+          401: errorResponseSchema,
           403: errorResponseSchema,
           404: errorResponseSchema,
           500: errorResponseSchema,
@@ -44,7 +41,7 @@ export default async function (fastify: ServerInstance) {
     },
     async (request, reply) => {
       const { whisperId } = request.params
-      const { userId } = request.query
+      const userId = (request as AuthenticatedRequest).user.sub
 
       // Whisperの存在確認
       const whisper = await prisma.whisper.findUnique({

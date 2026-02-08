@@ -1,13 +1,15 @@
 import { z } from 'zod'
 import { prisma } from '../../database'
 import type { ServerInstance } from '../../lib/fastify'
-import { discoverQuerySchema, discoverResponseSchema, errorResponseSchema } from './schema'
+import { authenticate, type AuthenticatedRequest } from '../../lib/auth'
+import { discoverQuerySchema, discoverResponseSchema, discoverStoriesResponseSchema, errorResponseSchema } from './schema'
 
 export default async function (fastify: ServerInstance) {
   // GET /api/discover - おすすめユーザー一覧
   fastify.get(
     '/',
     {
+      preHandler: [authenticate],
       schema: {
         tags: ['Discover'],
         summary: 'おすすめユーザー一覧',
@@ -20,11 +22,11 @@ export default async function (fastify: ServerInstance) {
       },
     },
     async (request, reply) => {
-      const { userId, page, limit } = request.query as {
-        userId: string
+      const { page, limit } = request.query as {
         page: number
         limit: number
       }
+      const userId = (request as AuthenticatedRequest).user.sub
 
       const user = await prisma.user.findUnique({ where: { id: userId } })
       if (!user) {
@@ -38,16 +40,14 @@ export default async function (fastify: ServerInstance) {
       })
       const followingIds = following.map((f) => f.followingId)
 
-      // 有効なWhisperを持つユーザー（自分とフォロー中を除く）
       const now = new Date()
-      const usersWithWhispers = await prisma.user.findMany({
+
+      // おすすめユーザーを取得（自分とフォロー中を除く、鍵アカウントも除外）
+      // Whisperがあるユーザーを優先し、ないユーザーも含める
+      const discoverUsers = await prisma.user.findMany({
         where: {
           id: { notIn: [userId, ...followingIds] },
-          whispers: {
-            some: {
-              expiresAt: { gt: now },
-            },
-          },
+          isPrivate: false,
         },
         include: {
           whispers: {
@@ -72,11 +72,27 @@ export default async function (fastify: ServerInstance) {
         orderBy: { createdAt: 'desc' },
       })
 
-      const total = usersWithWhispers.length
+      // Whisperがあるユーザーを優先してソート
+      const sortedUsers = discoverUsers.sort((a, b) => {
+        const aHasWhispers = a._count.whispers > 0
+        const bHasWhispers = b._count.whispers > 0
+        if (aHasWhispers && !bHasWhispers) return -1
+        if (!aHasWhispers && bHasWhispers) return 1
+        // 両方Whisperがある場合は最新のWhisper日時でソート
+        if (aHasWhispers && bHasWhispers) {
+          const aLatest = a.whispers[0]?.createdAt ?? new Date(0)
+          const bLatest = b.whispers[0]?.createdAt ?? new Date(0)
+          return bLatest.getTime() - aLatest.getTime()
+        }
+        // 両方Whisperがない場合は登録日時でソート
+        return b.createdAt.getTime() - a.createdAt.getTime()
+      })
+
+      const total = sortedUsers.length
       const totalPages = Math.ceil(total / limit)
       const skip = (page - 1) * limit
 
-      const paginatedUsers = usersWithWhispers.slice(skip, skip + limit)
+      const paginatedUsers = sortedUsers.slice(skip, skip + limit)
 
       const data = paginatedUsers.map((u) => {
         // 未視聴のWhisperがあるかチェック
@@ -110,16 +126,47 @@ export default async function (fastify: ServerInstance) {
   fastify.get(
     '/:targetUserId/stories',
     {
+      preHandler: [authenticate],
       schema: {
         tags: ['Discover'],
         summary: 'おすすめユーザーのストーリー取得',
         params: z.object({ targetUserId: z.string() }),
-        querystring: z.object({ userId: z.string() }),
+        response: {
+          200: discoverStoriesResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+        },
       },
     },
     async (request, reply) => {
       const { targetUserId } = request.params as { targetUserId: string }
-      const { userId } = request.query as { userId: string }
+      const userId = (request as AuthenticatedRequest).user.sub
+
+      // 対象ユーザーのプライバシーチェック
+      const targetUser = await prisma.user.findUnique({
+        where: { id: targetUserId },
+        select: { id: true, name: true, avatarPath: true, isPrivate: true },
+      })
+
+      if (!targetUser) {
+        return reply.send({ user: null, stories: [], hasUnviewed: false })
+      }
+
+      // 鍵垢の場合、フォロワーかオーナーのみアクセス可能
+      if (targetUser.isPrivate && targetUserId !== userId) {
+        const isFollower = await prisma.follow.findUnique({
+          where: {
+            followerId_followingId: {
+              followerId: userId,
+              followingId: targetUserId,
+            },
+          },
+        })
+
+        if (!isFollower) {
+          return reply.status(403).send({ message: 'このユーザーのストーリーを表示する権限がありません' })
+        }
+      }
 
       const now = new Date()
       // 有効なWhisperを取得（視聴済みも含む）
@@ -136,18 +183,11 @@ export default async function (fastify: ServerInstance) {
       })
 
       if (whispers.length === 0) {
-        // ユーザー情報を別途取得
-        const targetUser = await prisma.user.findUnique({
-          where: { id: targetUserId },
-          select: { id: true, name: true, avatarPath: true },
-        })
-        const user = targetUser
-          ? {
-              id: targetUser.id,
-              name: targetUser.name ?? '',
-              avatarUrl: targetUser.avatarPath,
-            }
-          : null
+        const user = {
+          id: targetUser.id,
+          name: targetUser.name ?? '',
+          avatarUrl: targetUser.avatarPath,
+        }
         return reply.send({ user, stories: [], hasUnviewed: false })
       }
 

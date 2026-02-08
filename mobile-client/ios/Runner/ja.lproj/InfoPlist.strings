@@ -1,0 +1,10 @@
+/* Japanese localization for iOS permissions and app info */
+
+/* App name */
+"CFBundleDisplayName" = "Voicelet";
+
+/* Microphone permission */
+"NSMicrophoneUsageDescription" = "音声を録音するためにマイクへのアクセスが必要です";
+
+/* Camera permission */
+"NSCameraUsageDescription" = "QRコードをスキャンしてユーザーをフォローするために使用します";

@@ -83,15 +83,13 @@ class _SplashPageState extends ConsumerState<SplashPage>
     );
 
     // タイトルのスライドアップ
-    _titleSlide = Tween<Offset>(
-      begin: const Offset(0, 0.2),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _mainController,
-        curve: const Interval(0.25, 0.6, curve: Curves.easeOutCubic),
-      ),
-    );
+    _titleSlide = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _mainController,
+            curve: const Interval(0.25, 0.6, curve: Curves.easeOutCubic),
+          ),
+        );
 
     // タグラインのフェードイン（さらに遅延）
     _taglineOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -103,21 +101,16 @@ class _SplashPageState extends ConsumerState<SplashPage>
 
     // 認証ボタンのアニメーション
     _buttonsOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _buttonsController,
-        curve: Curves.easeOut,
-      ),
+      CurvedAnimation(parent: _buttonsController, curve: Curves.easeOut),
     );
 
-    _buttonsSlide = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _buttonsController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
+    _buttonsSlide = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _buttonsController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
     _mainController.forward();
   }
@@ -189,10 +182,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
         fit: StackFit.expand,
         children: [
           // 背景画像
-          Image.asset(
-            'assets/main_background.png',
-            fit: BoxFit.cover,
-          ),
+          Image.asset('assets/main_background.png', fit: BoxFit.cover),
           // 上部にグラデーションオーバーレイ（文字の視認性向上）
           Container(
             decoration: BoxDecoration(
@@ -311,15 +301,17 @@ class _SplashPageState extends ConsumerState<SplashPage>
             boxShadow: [
               // 外側のソフトグロー
               BoxShadow(
-                color:
-                    AppTheme.accentPrimary.withValues(alpha: glowIntensity * 0.6),
+                color: AppTheme.accentPrimary.withValues(
+                  alpha: glowIntensity * 0.6,
+                ),
                 blurRadius: 50,
                 spreadRadius: 5,
               ),
               // 中間のグロー
               BoxShadow(
-                color:
-                    AppTheme.particleWarm.withValues(alpha: glowIntensity * 0.3),
+                color: AppTheme.particleWarm.withValues(
+                  alpha: glowIntensity * 0.3,
+                ),
                 blurRadius: 30,
                 spreadRadius: 2,
               ),
@@ -425,61 +417,29 @@ class _SplashPageState extends ConsumerState<SplashPage>
         opacity: _buttonsOpacity.value,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
-          child: Column(
-            children: [
-              // Sign Up ボタン（メイン）
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: () => context.push('/auth/signup'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.accentPrimary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(26),
-                    ),
-                    elevation: 4,
-                    shadowColor: AppTheme.accentPrimary.withValues(alpha: 0.4),
-                  ),
-                  child: const Text(
-                    'Sign Up',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
+          child: SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: () => context.push('/auth/signup'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.accentPrimary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(26),
+                ),
+                elevation: 4,
+                shadowColor: AppTheme.accentPrimary.withValues(alpha: 0.4),
+              ),
+              child: const Text(
+                'ログイン',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.5,
                 ),
               ),
-              const SizedBox(height: 16),
-              // Sign In ボタン（セカンダリ）
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: OutlinedButton(
-                  onPressed: () => context.push('/auth/signin'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.textPrimary,
-                    side: BorderSide(
-                      color: AppTheme.textPrimary.withValues(alpha: 0.5),
-                      width: 1.5,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(26),
-                    ),
-                  ),
-                  child: const Text(
-                    'Sign In',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -521,7 +481,9 @@ class _LoadingDots extends StatelessWidget {
                 color: AppTheme.textPrimary.withValues(alpha: opacity),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.accentPrimary.withValues(alpha: opacity * 0.5),
+                    color: AppTheme.accentPrimary.withValues(
+                      alpha: opacity * 0.5,
+                    ),
                     blurRadius: 10,
                     spreadRadius: 2,
                   ),

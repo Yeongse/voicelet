@@ -50,7 +50,6 @@ export async function registerJwtAuth(fastify: FastifyInstance): Promise<void> {
     if (error || !data.user) {
       return reply.status(401).send({ message: '認証が必要です' })
     }
-
     // リクエストにユーザー情報を追加
     ;(request as AuthenticatedRequest).user = {
       sub: data.user.id,
@@ -76,7 +75,6 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
   if (error || !data.user) {
     return reply.status(401).send({ message: '認証が必要です' })
   }
-
   // リクエストにユーザー情報を追加
   ;(request as AuthenticatedRequest).user = {
     sub: data.user.id,
@@ -102,7 +100,6 @@ export async function optionalAuthenticate(request: FastifyRequest): Promise<voi
   if (error || !data.user) {
     return
   }
-
   // リクエストにユーザー情報を追加
   ;(request as AuthenticatedRequest).user = {
     sub: data.user.id,

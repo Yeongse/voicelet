@@ -1,12 +1,28 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
-import { prisma } from '../../database'
 import Fastify from 'fastify'
-import type { FastifyInstance } from 'fastify'
-import {
-  serializerCompiler,
-  validatorCompiler,
-} from 'fastify-type-provider-zod'
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
+import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { prisma } from '../../database'
+import type { AuthenticatedRequest } from '../../lib/auth'
 import whisperViewsController from './controller'
+
+// 現在の認証ユーザーを保持
+let currentAuthUserId: string | null = null
+
+// auth moduleをモック
+vi.mock('../../lib/auth', () => ({
+  authenticate: vi.fn(async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!currentAuthUserId) {
+      return reply.status(401).send({ message: '認証が必要です' })
+    }
+    ;(request as AuthenticatedRequest).user = {
+      sub: currentAuthUserId,
+      email: 'test@test.com',
+      iat: 0,
+      exp: 0,
+    }
+  }),
+}))
 
 describe('POST /api/whisper-views - 視聴履歴記録API', () => {
   let app: FastifyInstance
@@ -53,11 +69,11 @@ describe('POST /api/whisper-views - 視聴履歴記録API', () => {
   })
 
   it('新規視聴履歴を作成できる', async () => {
+    currentAuthUserId = viewer.id
     const response = await app.inject({
       method: 'POST',
       url: '/',
       payload: {
-        userId: viewer.id,
         whisperId: whisper.id,
       },
     })
@@ -81,11 +97,11 @@ describe('POST /api/whisper-views - 視聴履歴記録API', () => {
     })
 
     // 再閲覧
+    currentAuthUserId = viewer.id
     const response = await app.inject({
       method: 'POST',
       url: '/',
       payload: {
-        userId: viewer.id,
         whisperId: whisper.id,
       },
     })
@@ -112,11 +128,11 @@ describe('POST /api/whisper-views - 視聴履歴記録API', () => {
     })
 
     // 再閲覧
+    currentAuthUserId = viewer.id
     await app.inject({
       method: 'POST',
       url: '/',
       payload: {
-        userId: viewer.id,
         whisperId: whisper.id,
       },
     })

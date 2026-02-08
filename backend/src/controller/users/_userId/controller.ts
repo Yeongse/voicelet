@@ -1,5 +1,6 @@
 import { prisma } from '../../../database'
 import type { ServerInstance } from '../../../lib/fastify'
+import { authenticate, type AuthenticatedRequest } from '../../../lib/auth'
 import {
   commandResponseSchema,
   deleteUserParamsSchema,
@@ -12,14 +13,12 @@ import {
 
 function formatUserResponse(user: {
   id: string
-  email: string
   name: string | null
   createdAt: Date
   updatedAt: Date
 }) {
   return {
     id: user.id,
-    email: user.email,
     name: user.name ?? '',
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
@@ -30,6 +29,7 @@ export default async function (fastify: ServerInstance) {
   fastify.get(
     '/',
     {
+      preHandler: [authenticate],
       schema: {
         tags: ['User'],
         summary: 'ユーザー詳細取得',
@@ -37,6 +37,7 @@ export default async function (fastify: ServerInstance) {
         params: getUserParamsSchema,
         response: {
           200: getUserResponseSchema,
+          401: errorResponseSchema,
           404: errorResponseSchema,
         },
       },
@@ -59,15 +60,18 @@ export default async function (fastify: ServerInstance) {
   fastify.put(
     '/',
     {
+      preHandler: [authenticate],
       schema: {
         tags: ['User'],
         summary: 'ユーザー更新',
-        description: '指定したIDのユーザー情報を更新します。',
+        description: '指定したIDのユーザー情報を更新します。自分自身のみ更新可能。',
         params: updateUserParamsSchema,
         body: updateUserRequestSchema,
         response: {
           200: commandResponseSchema,
           400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
           404: errorResponseSchema,
           409: errorResponseSchema,
         },
@@ -75,7 +79,13 @@ export default async function (fastify: ServerInstance) {
     },
     async (request, reply) => {
       const { userId } = request.params
+      const currentUserId = (request as AuthenticatedRequest).user.sub
       const { email, name } = request.body
+
+      // 自分自身のみ更新可能
+      if (userId !== currentUserId) {
+        return reply.status(403).send({ message: 'このユーザーを更新する権限がありません' })
+      }
 
       const existingUser = await prisma.user.findUnique({
         where: { id: userId },
@@ -113,19 +123,28 @@ export default async function (fastify: ServerInstance) {
   fastify.delete(
     '/',
     {
+      preHandler: [authenticate],
       schema: {
         tags: ['User'],
         summary: 'ユーザー削除',
-        description: '指定したIDのユーザーを削除します。',
+        description: '指定したIDのユーザーを削除します。自分自身のみ削除可能。',
         params: deleteUserParamsSchema,
         response: {
           200: commandResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
           404: errorResponseSchema,
         },
       },
     },
     async (request, reply) => {
       const { userId } = request.params
+      const currentUserId = (request as AuthenticatedRequest).user.sub
+
+      // 自分自身のみ削除可能
+      if (userId !== currentUserId) {
+        return reply.status(403).send({ message: 'このユーザーを削除する権限がありません' })
+      }
 
       const existingUser = await prisma.user.findUnique({
         where: { id: userId },

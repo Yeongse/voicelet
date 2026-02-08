@@ -269,6 +269,23 @@ class _HomePageState extends ConsumerState<HomePage>
             ),
           ),
           const SizedBox(width: 12),
+          // 検索ボタン
+          GestureDetector(
+            onTap: () => context.push('/search'),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.search_rounded,
+                size: 20,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
           // プロフィールボタン
           ProfileAvatarButton(
             onTap: _openProfileDrawer,

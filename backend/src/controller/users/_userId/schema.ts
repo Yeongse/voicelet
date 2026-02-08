@@ -6,7 +6,6 @@ export const errorResponseSchema = z.object({
 
 export const userResponseSchema = z.object({
   id: z.string(),
-  email: z.string().email(),
   name: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),

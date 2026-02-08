@@ -12,7 +12,6 @@ export const errorResponseSchema = z.object({
 
 export const signedUrlRequestSchema = z.object({
   fileName: z.string().min(1).max(255),
-  userId: z.string().min(1).max(100),
 })
 
 export type SignedUrlRequest = z.infer<typeof signedUrlRequestSchema>
@@ -31,7 +30,6 @@ export type SignedUrlResponse = z.infer<typeof signedUrlResponseSchema>
 // ===========================================
 
 export const createWhisperRequestSchema = z.object({
-  userId: z.string().min(1).max(100),
   fileName: z.string().min(1).max(255),
   duration: z.number().int().min(1).max(30),
 })

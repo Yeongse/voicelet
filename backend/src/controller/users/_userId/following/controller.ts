@@ -65,6 +65,7 @@ export default async function (fastify: ServerInstance) {
             following: {
               select: {
                 id: true,
+                username: true,
                 name: true,
                 bio: true,
                 avatarPath: true,
@@ -116,6 +117,7 @@ export default async function (fastify: ServerInstance) {
 
           return {
             id: f.following.id,
+            username: f.following.username,
             name: f.following.name,
             bio: f.following.bio,
             avatarUrl,

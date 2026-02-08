@@ -1,5 +1,6 @@
 import { prisma } from '../../database'
 import type { ServerInstance } from '../../lib/fastify'
+import { authenticate, type AuthenticatedRequest } from '../../lib/auth'
 import { buildPaginationResponse, calculatePagination } from '../../lib/pagination'
 import {
   commandResponseSchema,
@@ -11,14 +12,12 @@ import {
 
 function formatUserResponse(user: {
   id: string
-  email: string
   name: string | null
   createdAt: Date
   updatedAt: Date
 }) {
   return {
     id: user.id,
-    email: user.email,
     name: user.name ?? '',
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
@@ -29,6 +28,7 @@ export default async function (fastify: ServerInstance) {
   fastify.get(
     '/',
     {
+      preHandler: [authenticate],
       schema: {
         tags: ['User'],
         summary: 'ユーザー一覧取得',
@@ -36,6 +36,7 @@ export default async function (fastify: ServerInstance) {
         querystring: listUsersQuerySchema,
         response: {
           200: listUsersResponseSchema,
+          401: errorResponseSchema,
         },
       },
     },
@@ -44,9 +45,13 @@ export default async function (fastify: ServerInstance) {
 
       const { skip, take } = calculatePagination({ page, limit })
 
+      // 検索はnameとusernameのみ（メールアドレスで検索しない）
       const where = search
         ? {
-            OR: [{ name: { contains: search } }, { email: { contains: search } }],
+            OR: [
+              { name: { contains: search, mode: 'insensitive' as const } },
+              { username: { contains: search, mode: 'insensitive' as const } },
+            ],
           }
         : {}
 

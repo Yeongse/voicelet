@@ -5,7 +5,7 @@
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>en</string>
+	<string>ja</string>
 	<key>CFBundleDisplayName</key>
 	<string>voicelet</string>
 	<key>CFBundleExecutable</key>
@@ -33,6 +33,8 @@
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>音声を録音するためにマイクへのアクセスが必要です</string>
+	<key>NSCameraUsageDescription</key>
+	<string>QRコードをスキャンしてユーザーをフォローするために使用します</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>CFBundleURLTypes</key>

@@ -23,6 +23,7 @@ Profile _$ProfileFromJson(Map<String, dynamic> json) {
 mixin _$Profile {
   String get id => throw _privateConstructorUsedError;
   String get email => throw _privateConstructorUsedError;
+  String? get username => throw _privateConstructorUsedError;
   String? get name => throw _privateConstructorUsedError;
   String? get bio => throw _privateConstructorUsedError;
   String? get birthMonth => throw _privateConstructorUsedError;
@@ -53,6 +54,7 @@ abstract class $ProfileCopyWith<$Res> {
   $Res call({
     String id,
     String email,
+    String? username,
     String? name,
     String? bio,
     String? birthMonth,
@@ -85,6 +87,7 @@ class _$ProfileCopyWithImpl<$Res, $Val extends Profile>
   $Res call({
     Object? id = null,
     Object? email = null,
+    Object? username = freezed,
     Object? name = freezed,
     Object? bio = freezed,
     Object? birthMonth = freezed,
@@ -108,6 +111,10 @@ class _$ProfileCopyWithImpl<$Res, $Val extends Profile>
                 ? _value.email
                 : email // ignore: cast_nullable_to_non_nullable
                       as String,
+            username: freezed == username
+                ? _value.username
+                : username // ignore: cast_nullable_to_non_nullable
+                      as String?,
             name: freezed == name
                 ? _value.name
                 : name // ignore: cast_nullable_to_non_nullable
@@ -173,6 +180,7 @@ abstract class _$$ProfileImplCopyWith<$Res> implements $ProfileCopyWith<$Res> {
   $Res call({
     String id,
     String email,
+    String? username,
     String? name,
     String? bio,
     String? birthMonth,
@@ -204,6 +212,7 @@ class __$$ProfileImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? email = null,
+    Object? username = freezed,
     Object? name = freezed,
     Object? bio = freezed,
     Object? birthMonth = freezed,
@@ -227,6 +236,10 @@ class __$$ProfileImplCopyWithImpl<$Res>
             ? _value.email
             : email // ignore: cast_nullable_to_non_nullable
                   as String,
+        username: freezed == username
+            ? _value.username
+            : username // ignore: cast_nullable_to_non_nullable
+                  as String?,
         name: freezed == name
             ? _value.name
             : name // ignore: cast_nullable_to_non_nullable
@@ -286,6 +299,7 @@ class _$ProfileImpl implements _Profile {
   const _$ProfileImpl({
     required this.id,
     required this.email,
+    this.username,
     this.name,
     this.bio,
     this.birthMonth,
@@ -307,6 +321,8 @@ class _$ProfileImpl implements _Profile {
   final String id;
   @override
   final String email;
+  @override
+  final String? username;
   @override
   final String? name;
   @override
@@ -339,7 +355,7 @@ class _$ProfileImpl implements _Profile {
 
   @override
   String toString() {
-    return 'Profile(id: $id, email: $email, name: $name, bio: $bio, birthMonth: $birthMonth, age: $age, avatarUrl: $avatarUrl, isPrivate: $isPrivate, followingCount: $followingCount, followersCount: $followersCount, followStatus: $followStatus, isOwnProfile: $isOwnProfile, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Profile(id: $id, email: $email, username: $username, name: $name, bio: $bio, birthMonth: $birthMonth, age: $age, avatarUrl: $avatarUrl, isPrivate: $isPrivate, followingCount: $followingCount, followersCount: $followersCount, followStatus: $followStatus, isOwnProfile: $isOwnProfile, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -349,6 +365,8 @@ class _$ProfileImpl implements _Profile {
             other is _$ProfileImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.email, email) || other.email == email) &&
+            (identical(other.username, username) ||
+                other.username == username) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.bio, bio) || other.bio == bio) &&
             (identical(other.birthMonth, birthMonth) ||
@@ -378,6 +396,7 @@ class _$ProfileImpl implements _Profile {
     runtimeType,
     id,
     email,
+    username,
     name,
     bio,
     birthMonth,
@@ -410,6 +429,7 @@ abstract class _Profile implements Profile {
   const factory _Profile({
     required final String id,
     required final String email,
+    final String? username,
     final String? name,
     final String? bio,
     final String? birthMonth,
@@ -430,6 +450,8 @@ abstract class _Profile implements Profile {
   String get id;
   @override
   String get email;
+  @override
+  String? get username;
   @override
   String? get name;
   @override

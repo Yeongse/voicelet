@@ -303,9 +303,35 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
     }
   }
 
-  void _closeViewer() {
-    // 閉じる前に、このユーザーの全投稿が視聴済みかチェック
+  Future<void> _closeViewer() async {
+    // 全投稿が視聴済みかチェック
+    final viewedStoryIds = ref.read(viewedStoryIdsProvider);
+    final allViewed = widget.story.stories.every(
+      (story) => story.isViewed || viewedStoryIds.contains(story.id),
+    );
+
+    // 全て視聴済みなら確認なしで閉じる
+    if (allViewed) {
+      await _audioPlayer.stop();
+      _checkAndMarkUserAsFullyViewed();
+      if (!mounted) return;
+      context.pop();
+      return;
+    }
+
+    // 未視聴があれば確認ダイアログを表示
+    final confirmed = await showConfirmAlertDialog(
+      context: context,
+      title: '視聴を終了',
+      message: '少しでも再生した投稿は、もう一度視聴できなくなります。\n終了してもよろしいですか？',
+      confirmText: '終了する',
+    );
+
+    if (!confirmed || !mounted) return;
+
+    await _audioPlayer.stop();
     _checkAndMarkUserAsFullyViewed();
+    if (!mounted) return;
     context.pop();
   }
 
@@ -335,9 +361,16 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.bgPrimary,
-      body: GestureDetector(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _closeViewer();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppTheme.bgPrimary,
+        body: GestureDetector(
         onTapUp: (details) {
           final screenWidth = MediaQuery.of(context).size.width;
           if (details.localPosition.dx < screenWidth / 3) {
@@ -388,6 +421,7 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
             ),
           ],
         ),
+      ),
       ),
     );
   }

@@ -31,6 +31,7 @@ class _HomePageState extends ConsumerState<HomePage>
   // チュートリアル用GlobalKeys
   final GlobalKey _myStorySectionKey = GlobalKey();
   final GlobalKey _tabBarKey = GlobalKey();
+  final GlobalKey _feedAreaKey = GlobalKey();
   final GlobalKey _searchButtonKey = GlobalKey();
   final GlobalKey _profileButtonKey = GlobalKey();
 
@@ -97,7 +98,7 @@ class _HomePageState extends ConsumerState<HomePage>
   }
 
   List<TargetFocus> _buildTutorialTargets() {
-    const totalSteps = 5;
+    const totalSteps = 6;
     return [
       TutorialContent.createTarget(
         key: _myStorySectionKey,
@@ -120,13 +121,23 @@ class _HomePageState extends ConsumerState<HomePage>
         onSkip: () => ref.read(tutorialProvider.notifier).dismiss(),
       ),
       TutorialContent.createTarget(
+        key: _feedAreaKey,
+        identify: 'feed_area',
+        align: ContentAlign.top,
+        title: '投稿を視聴',
+        description: 'ユーザーのアイコンをタップすると、\nその人の投稿を視聴できます。\n\n※ 各投稿は1回しか視聴できません。',
+        currentStep: 2,
+        totalSteps: totalSteps,
+        onSkip: () => ref.read(tutorialProvider.notifier).dismiss(),
+      ),
+      TutorialContent.createTarget(
         key: _searchButtonKey,
         identify: 'search',
         align: ContentAlign.bottom,
         shape: ShapeLightFocus.Circle,
         title: 'ユーザー検索',
         description: 'ユーザー名や表示名で\n他のユーザーを検索できます。',
-        currentStep: 2,
+        currentStep: 3,
         totalSteps: totalSteps,
         onSkip: () => ref.read(tutorialProvider.notifier).dismiss(),
       ),
@@ -137,14 +148,14 @@ class _HomePageState extends ConsumerState<HomePage>
         shape: ShapeLightFocus.Circle,
         title: 'プロフィール',
         description: 'プロフィールの確認・編集や\n各種設定にアクセスできます。',
-        currentStep: 3,
+        currentStep: 4,
         totalSteps: totalSteps,
         onSkip: () => ref.read(tutorialProvider.notifier).dismiss(),
       ),
       // 完了メッセージ
       TutorialContent.createCompletionTarget(
         identify: 'home_completion',
-        currentStep: 4,
+        currentStep: 5,
         totalSteps: totalSteps,
       ),
     ];
@@ -451,6 +462,7 @@ class _HomePageState extends ConsumerState<HomePage>
 
                 // タブコンテンツ
                 Expanded(
+                  key: _feedAreaKey,
                   child: TabBarView(
                     controller: _tabController,
                     children: [

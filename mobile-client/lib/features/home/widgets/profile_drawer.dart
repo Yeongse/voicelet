@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/dialogs.dart';
+import '../../ads/widgets/reward_ad_button.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/models/profile.dart';
 import '../../follow/providers/follow_provider.dart';
@@ -186,6 +187,14 @@ class ProfileDrawer extends ConsumerWidget {
             context.push('/qr-code');
           },
         ),
+        const SizedBox(height: 16),
+        Divider(
+          color: AppTheme.textTertiary.withValues(alpha: 0.2),
+          height: 1,
+        ),
+        const SizedBox(height: 16),
+        // リワード広告ボタン（視聴履歴クリア機能）
+        const RewardAdButton(),
         const SizedBox(height: 16),
         Divider(
           color: AppTheme.textTertiary.withValues(alpha: 0.2),
@@ -399,6 +408,9 @@ class ProfileAvatarButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
+    final requestCountAsync = ref.watch(followRequestCountProvider);
+    final hasRequests = (requestCountAsync.valueOrNull ?? 0) > 0;
+
     String? avatarUrl;
     if (authState is AuthStateAuthenticated) {
       avatarUrl = authState.profile.avatarUrl;
@@ -406,56 +418,93 @@ class ProfileAvatarButton extends ConsumerWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: AppTheme.gradientAccent,
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.accentPrimary.withValues(alpha: 0.3),
-              blurRadius: 8,
-              spreadRadius: 1,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: AppTheme.gradientAccent,
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.accentPrimary.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  spreadRadius: 1,
+                ),
+              ],
             ),
-          ],
-        ),
-        padding: const EdgeInsets.all(2),
-        child: Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppTheme.bgSecondary,
-          ),
-          child: ClipOval(
-            child: avatarUrl != null
-                ? Image.network(
-                    avatarUrl,
-                    fit: BoxFit.cover,
-                    width: size - 4,
-                    height: size - 4,
-                    errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
+            padding: const EdgeInsets.all(2),
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.bgSecondary,
+              ),
+              child: ClipOval(
+                child: avatarUrl != null
+                    ? Image.network(
+                        avatarUrl,
+                        fit: BoxFit.cover,
                         width: size - 4,
                         height: size - 4,
-                        color: AppTheme.bgTertiary,
-                        child: Center(
-                          child: SizedBox(
-                            width: size * 0.4,
-                            height: size * 0.4,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppTheme.accentPrimary,
+                        errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            width: size - 4,
+                            height: size - 4,
+                            color: AppTheme.bgTertiary,
+                            child: Center(
+                              child: SizedBox(
+                                width: size * 0.4,
+                                height: size * 0.4,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppTheme.accentPrimary,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      );
-                    },
-                  )
-                : _buildDefaultAvatar(),
+                          );
+                        },
+                      )
+                    : _buildDefaultAvatar(),
+              ),
+            ),
           ),
-        ),
+          // フォローリクエストバッジ
+          if (hasRequests)
+            Positioned(
+              right: -2,
+              top: -2,
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: AppTheme.error,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppTheme.bgPrimary,
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.error.withValues(alpha: 0.4),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.priority_high_rounded,
+                    size: 8,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

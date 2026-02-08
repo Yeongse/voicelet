@@ -17,3 +17,8 @@ export const viewResponseSchema = z.object({
     viewedAt: z.string(),
   }),
 })
+
+export const alreadyViewedResponseSchema = z.object({
+  message: z.string(),
+  viewedAt: z.string(),
+})

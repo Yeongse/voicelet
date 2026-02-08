@@ -9,7 +9,7 @@ part of 'profile.dart';
 _$ProfileImpl _$$ProfileImplFromJson(Map<String, dynamic> json) =>
     _$ProfileImpl(
       id: json['id'] as String,
-      email: json['email'] as String,
+      email: json['email'] as String?,
       username: json['username'] as String?,
       name: json['name'] as String?,
       bio: json['bio'] as String?,

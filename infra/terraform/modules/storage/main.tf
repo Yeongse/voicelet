@@ -12,13 +12,15 @@ resource "google_storage_bucket" "audio" {
   # Storage class
   storage_class = "STANDARD"
 
-  # Lifecycle rule: delete files after 25 hours (余裕を持って24時間+1時間)
+  # Lifecycle rule: 2日後にARCHIVEストレージクラスに移行（コスト削減）
+  # ARCHIVEは最も低コストだが、取り出し時に料金がかかる
   lifecycle_rule {
     condition {
-      age = 2 # days (GCSのageは日単位、最小1日。25時間は2日目に削除)
+      age = 2 # days
     }
     action {
-      type = "Delete"
+      type          = "SetStorageClass"
+      storage_class = "ARCHIVE"
     }
   }
 

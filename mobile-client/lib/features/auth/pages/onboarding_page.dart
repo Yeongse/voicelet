@@ -7,9 +7,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../providers/auth_provider.dart';
+import '../../legal/legal_content.dart';
 import '../../profile/services/profile_api_service.dart';
 import '../../search/providers/username_check_provider.dart';
+import '../providers/auth_provider.dart';
 
 /// オンボーディング画面（新規ユーザー向けプロフィール入力）
 /// 表示名は必須。プロフィール登録完了後にDBにユーザーが永続化される。
@@ -98,9 +99,12 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
       final username = _usernameController.text.trim().replaceAll(RegExp(r'^@'), '');
 
       // プロフィールを新規登録（POST）してユーザーをDBに永続化
+      // 同意情報も一緒に送信
       var profile = await profileService.registerProfile(
         username: username,
         name: _nameController.text.trim(),
+        termsOfServiceVersion: termsOfServiceVersion,
+        privacyPolicyVersion: privacyPolicyVersion,
         bio: _bioController.text.trim().isEmpty
             ? null
             : _bioController.text.trim(),

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/api/api_client.dart';
+import '../../ads/services/ad_service.dart';
 import '../models/splash_result.dart';
 
 /// 最低表示時間（ブランド認知確保）
@@ -18,8 +19,17 @@ const splashTimeoutDuration = Duration(seconds: 10);
 /// - 未認証 → ログイン
 final splashInitProvider = FutureProvider<SplashResult>((ref) async {
   try {
-    // 最低表示時間を確保
-    await Future.delayed(splashMinDisplayDuration);
+    // AdMob SDK 初期化を並行して実行
+    final adInitFuture = AdService.instance.initialize().then((_) {
+      // 初期化完了後にリワード広告をプリロード
+      AdService.instance.preloadRewardedAd();
+    });
+
+    // 最低表示時間を確保（AdMob初期化と並行）
+    await Future.wait([
+      Future.delayed(splashMinDisplayDuration),
+      adInitFuture,
+    ]);
 
     // 認証状態を確認
     final session = Supabase.instance.client.auth.currentSession;

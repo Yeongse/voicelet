@@ -85,7 +85,7 @@ describe('POST /api/whisper-views - 視聴履歴記録API', () => {
     expect(body.view.whisperId).toBe(whisper.id)
   })
 
-  it('同一ユーザーが同一ストーリーを再度閲覧した場合、閲覧日時のみ更新する', async () => {
+  it('同一ユーザーが同一ストーリーを再度閲覧した場合、409を返す', async () => {
     // 最初の閲覧
     const pastDate = new Date(Date.now() - 60 * 60 * 1000)
     await prisma.whisperView.create({
@@ -106,19 +106,13 @@ describe('POST /api/whisper-views - 視聴履歴記録API', () => {
       },
     })
 
-    expect(response.statusCode).toBe(200)
+    expect(response.statusCode).toBe(409)
     const body = JSON.parse(response.body)
-    expect(body.message).toBeDefined()
-
-    // 閲覧日時が更新されていることを確認
-    const updatedView = await prisma.whisperView.findUnique({
-      where: { userId_whisperId: { userId: viewer.id, whisperId: whisper.id } },
-    })
-    expect(updatedView).not.toBeNull()
-    expect(new Date(updatedView!.viewedAt).getTime()).toBeGreaterThan(pastDate.getTime())
+    expect(body.message).toBe('既に視聴済みです')
+    expect(body.viewedAt).toBeDefined()
   })
 
-  it('再閲覧時に重複レコードを作成しない', async () => {
+  it('再閲覧時に重複レコードを作成しない（409を返しても）', async () => {
     // 最初の閲覧
     await prisma.whisperView.create({
       data: {
@@ -127,9 +121,9 @@ describe('POST /api/whisper-views - 視聴履歴記録API', () => {
       },
     })
 
-    // 再閲覧
+    // 再閲覧（409が返る）
     currentAuthUserId = viewer.id
-    await app.inject({
+    const response = await app.inject({
       method: 'POST',
       url: '/',
       payload: {
@@ -137,7 +131,9 @@ describe('POST /api/whisper-views - 視聴履歴記録API', () => {
       },
     })
 
-    // レコード数を確認
+    expect(response.statusCode).toBe(409)
+
+    // レコード数を確認（重複していないこと）
     const viewCount = await prisma.whisperView.count({
       where: { userId: viewer.id, whisperId: whisper.id },
     })

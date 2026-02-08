@@ -22,7 +22,8 @@ Profile _$ProfileFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$Profile {
   String get id => throw _privateConstructorUsedError;
-  String get email => throw _privateConstructorUsedError;
+  String? get email =>
+      throw _privateConstructorUsedError; // 他ユーザーのプロフィールではnull（プライバシー保護）
   String? get username => throw _privateConstructorUsedError;
   String? get name => throw _privateConstructorUsedError;
   String? get bio => throw _privateConstructorUsedError;
@@ -53,7 +54,7 @@ abstract class $ProfileCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String email,
+    String? email,
     String? username,
     String? name,
     String? bio,
@@ -86,7 +87,7 @@ class _$ProfileCopyWithImpl<$Res, $Val extends Profile>
   @override
   $Res call({
     Object? id = null,
-    Object? email = null,
+    Object? email = freezed,
     Object? username = freezed,
     Object? name = freezed,
     Object? bio = freezed,
@@ -107,10 +108,10 @@ class _$ProfileCopyWithImpl<$Res, $Val extends Profile>
                 ? _value.id
                 : id // ignore: cast_nullable_to_non_nullable
                       as String,
-            email: null == email
+            email: freezed == email
                 ? _value.email
                 : email // ignore: cast_nullable_to_non_nullable
-                      as String,
+                      as String?,
             username: freezed == username
                 ? _value.username
                 : username // ignore: cast_nullable_to_non_nullable
@@ -179,7 +180,7 @@ abstract class _$$ProfileImplCopyWith<$Res> implements $ProfileCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String email,
+    String? email,
     String? username,
     String? name,
     String? bio,
@@ -211,7 +212,7 @@ class __$$ProfileImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
-    Object? email = null,
+    Object? email = freezed,
     Object? username = freezed,
     Object? name = freezed,
     Object? bio = freezed,
@@ -232,10 +233,10 @@ class __$$ProfileImplCopyWithImpl<$Res>
             ? _value.id
             : id // ignore: cast_nullable_to_non_nullable
                   as String,
-        email: null == email
+        email: freezed == email
             ? _value.email
             : email // ignore: cast_nullable_to_non_nullable
-                  as String,
+                  as String?,
         username: freezed == username
             ? _value.username
             : username // ignore: cast_nullable_to_non_nullable
@@ -298,7 +299,7 @@ class __$$ProfileImplCopyWithImpl<$Res>
 class _$ProfileImpl implements _Profile {
   const _$ProfileImpl({
     required this.id,
-    required this.email,
+    this.email,
     this.username,
     this.name,
     this.bio,
@@ -320,7 +321,8 @@ class _$ProfileImpl implements _Profile {
   @override
   final String id;
   @override
-  final String email;
+  final String? email;
+  // 他ユーザーのプロフィールではnull（プライバシー保護）
   @override
   final String? username;
   @override
@@ -428,7 +430,7 @@ class _$ProfileImpl implements _Profile {
 abstract class _Profile implements Profile {
   const factory _Profile({
     required final String id,
-    required final String email,
+    final String? email,
     final String? username,
     final String? name,
     final String? bio,
@@ -449,7 +451,7 @@ abstract class _Profile implements Profile {
   @override
   String get id;
   @override
-  String get email;
+  String? get email; // 他ユーザーのプロフィールではnull（プライバシー保護）
   @override
   String? get username;
   @override

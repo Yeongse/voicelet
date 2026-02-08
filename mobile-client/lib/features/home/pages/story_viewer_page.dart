@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/dialogs.dart';
+import '../../ads/widgets/banner_ad_widget.dart';
 import '../models/home_models.dart';
 import '../providers/home_providers.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -107,6 +109,24 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
       final story = widget.story.stories[_currentIndex];
       final apiService = ref.read(homeApiServiceProvider);
       final userId = ref.read(currentUserIdProvider);
+      final viewedStoryIds = ref.read(viewedStoryIdsProvider);
+
+      // 既に視聴済みの場合は次へ進むか終了
+      if (story.isViewed || viewedStoryIds.contains(story.id)) {
+        ref.read(viewedStoryIdsProvider.notifier).update((state) {
+          return {...state, story.id};
+        });
+        // 次のストーリーがあれば進む、なければ終了
+        if (_currentIndex < widget.story.stories.length - 1) {
+          setState(() {
+            _currentIndex++;
+          });
+          _loadCurrentStory();
+        } else {
+          _closeViewer();
+        }
+        return;
+      }
 
       // 再生開始前に視聴記録APIを呼び出す（必須）
       // userIdがnullの場合は再生不可
@@ -151,53 +171,21 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
           return {...state, story.id};
         });
       } catch (e) {
-        // 409エラー（既に視聴済み）の場合
-        if (e.toString().contains('409')) {
-          // 既に視聴済みの場合もviewedStoryIdsProviderに追加
+        // 409エラー（既に視聴済み）の場合は次へ進むか終了
+        final is409Error = e is DioException && e.response?.statusCode == 409;
+        if (is409Error) {
           ref.read(viewedStoryIdsProvider.notifier).update((state) {
             return {...state, story.id};
           });
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    Icon(
-                      Icons.check_circle_outline_rounded,
-                      color: AppTheme.info,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'この投稿は既に視聴済みです',
-                      style: TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-                backgroundColor: AppTheme.bgElevated,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                ),
-                margin: const EdgeInsets.all(16),
-              ),
-            );
-            // 次のストーリーに進む、なければ閉じる
-            if (_currentIndex < widget.story.stories.length - 1) {
-              setState(() {
-                _currentIndex++;
-                _isLoading = false;
-              });
-              _loadCurrentStory();
-              return;
-            } else {
-              _closeViewer();
-              return;
-            }
+          if (_currentIndex < widget.story.stories.length - 1) {
+            setState(() {
+              _currentIndex++;
+            });
+            _loadCurrentStory();
+          } else {
+            _closeViewer();
           }
+          return;
         }
         // その他のAPIエラーの場合は再生を中断
         if (mounted) {
@@ -315,9 +303,35 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
     }
   }
 
-  void _closeViewer() {
-    // 閉じる前に、このユーザーの全投稿が視聴済みかチェック
+  Future<void> _closeViewer() async {
+    // 全投稿が視聴済みかチェック
+    final viewedStoryIds = ref.read(viewedStoryIdsProvider);
+    final allViewed = widget.story.stories.every(
+      (story) => story.isViewed || viewedStoryIds.contains(story.id),
+    );
+
+    // 全て視聴済みなら確認なしで閉じる
+    if (allViewed) {
+      await _audioPlayer.stop();
+      _checkAndMarkUserAsFullyViewed();
+      if (!mounted) return;
+      context.pop();
+      return;
+    }
+
+    // 未視聴があれば確認ダイアログを表示
+    final confirmed = await showConfirmAlertDialog(
+      context: context,
+      title: '視聴を終了',
+      message: '少しでも再生した投稿は、もう一度視聴できなくなります。\n終了してもよろしいですか？',
+      confirmText: '終了する',
+    );
+
+    if (!confirmed || !mounted) return;
+
+    await _audioPlayer.stop();
     _checkAndMarkUserAsFullyViewed();
+    if (!mounted) return;
     context.pop();
   }
 
@@ -347,9 +361,16 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.bgPrimary,
-      body: GestureDetector(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _closeViewer();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppTheme.bgPrimary,
+        body: GestureDetector(
         onTapUp: (details) {
           final screenWidth = MediaQuery.of(context).size.width;
           if (details.localPosition.dx < screenWidth / 3) {
@@ -391,12 +412,16 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
                     ),
                   ),
 
-                  const SizedBox(height: 32),
+                  // バナー広告
+                  const BannerAdWidget(),
+
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -685,4 +710,5 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
       return '${diff.inDays}日前';
     }
   }
+
 }

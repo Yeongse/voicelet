@@ -1,8 +1,10 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../ads/providers/ad_provider.dart';
 import '../../auth/models/profile.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../follow/models/follow_models.dart';
@@ -10,6 +12,7 @@ import '../../follow/providers/follow_provider.dart';
 import '../../follow/widgets/follow_button.dart';
 import '../../home/models/home_models.dart';
 import '../../home/pages/story_viewer_page.dart';
+import '../../home/providers/home_providers.dart';
 import '../../home/services/home_api_service.dart';
 import '../../profile/services/profile_api_service.dart';
 
@@ -204,12 +207,13 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
         final hasStories = response.stories.isNotEmpty;
         final hasUnviewed = response.hasUnviewed;
         return GestureDetector(
+          // 視聴済みでも遷移し、視聴画面で広告視聴による再生を提供
           onTap: hasStories ? () => _playStory(response, profile, 0) : null,
           child: _buildAvatarWithBorder(profile, hasStories: hasStories, hasUnviewed: hasUnviewed),
         );
       },
       loading: () => _buildAvatarWithBorder(profile, hasStories: false, hasUnviewed: false),
-      error: (_, _) => _buildAvatarWithBorder(profile, hasStories: false, hasUnviewed: false),
+      error: (e, s) => _buildAvatarWithBorder(profile, hasStories: false, hasUnviewed: false),
     );
   }
 
@@ -255,6 +259,20 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
   }
 
   Future<void> _playStory(DiscoverStoriesResponse response, Profile profile, int startIndex) async {
+    final viewedUserIds = ref.read(viewedUserIdsProvider);
+    final viewedStoryIds = ref.read(viewedStoryIdsProvider);
+
+    // このユーザーの全投稿が視聴済みかチェック
+    final isFullyViewedInSession = viewedUserIds.contains(widget.userId);
+    final allStoriesViewed = response.stories.every(
+      (s) => s.isViewed || viewedStoryIds.contains(s.id),
+    );
+
+    if (isFullyViewedInSession || allStoriesViewed) {
+      _showAlreadyViewedToast();
+      return;
+    }
+
     // UserStoryオブジェクトを作成
     final userStory = UserStory(
       user: StoryUser(
@@ -283,6 +301,167 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
     // ストーリービューワーから戻ったらデータを更新
     if (currentUserId != null && mounted) {
       ref.invalidate(userStoriesProvider((userId: widget.userId, currentUserId: currentUserId)));
+    }
+  }
+
+  void _showAlreadyViewedToast() {
+    showCupertinoDialog(
+      context: context,
+      builder: (dialogContext) => Consumer(
+        builder: (context, ref, _) {
+          final statusAsync = ref.watch(rewardAdStatusProvider);
+
+          return statusAsync.when(
+            data: (status) {
+              final remainingCount = status.remainingCount;
+              return CupertinoAlertDialog(
+                title: const Text('視聴済み'),
+                content: Text(
+                  remainingCount > 0
+                      ? 'このユーザーの投稿はすべて視聴済みです。\n\n動画広告を視聴して、視聴回数を回復しますか？\n（本日残り$remainingCount回）'
+                      : 'このユーザーの投稿はすべて視聴済みです。\n\n本日の広告視聴上限に達しました。\n（朝5時(JST)に回復します）',
+                ),
+                actions: [
+                  CupertinoDialogAction(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    child: const Text('閉じる'),
+                  ),
+                  if (remainingCount > 0)
+                    CupertinoDialogAction(
+                      onPressed: () {
+                        Navigator.of(dialogContext).pop();
+                        _handleWatchAd();
+                      },
+                      child: const Text('広告を見る'),
+                    ),
+                ],
+              );
+            },
+            loading: () => CupertinoAlertDialog(
+              title: const Text('視聴済み'),
+              content: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CupertinoActivityIndicator(),
+                  SizedBox(width: 16),
+                  Text('読み込み中...'),
+                ],
+              ),
+              actions: [
+                CupertinoDialogAction(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('閉じる'),
+                ),
+              ],
+            ),
+            error: (_, _) => CupertinoAlertDialog(
+              title: const Text('視聴済み'),
+              content: const Text('このユーザーの投稿はすべて視聴済みです。'),
+              actions: [
+                CupertinoDialogAction(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('閉じる'),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _handleWatchAd() async {
+    final adService = ref.read(adServiceProvider);
+    final statusNotifier = ref.read(rewardAdStatusProvider.notifier);
+
+    // ローディングダイアログを表示
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('広告を読み込み中...'),
+          ],
+        ),
+      ),
+    );
+
+    // 広告がロードされていなければプリロードを待つ
+    if (!adService.isRewardedAdReady) {
+      await adService.preloadRewardedAd();
+
+      if (!adService.isRewardedAdReady) {
+        if (mounted) {
+          Navigator.of(context).pop(); // ローディングダイアログを閉じる
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('広告の読み込みに失敗しました'),
+              backgroundColor: AppTheme.error,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    if (mounted) {
+      Navigator.of(context).pop(); // ローディングダイアログを閉じる
+    }
+
+    final currentUserId = ref.read(currentUserIdProvider);
+
+    try {
+      // 広告を表示
+      final earnedReward = await adService.showRewardedAd();
+
+      if (!earnedReward) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('広告の視聴が完了しませんでした')),
+          );
+        }
+        return;
+      }
+
+      // 視聴完了 → APIを呼び出して履歴をクリア
+      final response = await statusNotifier.useReward();
+
+      if (response != null && mounted) {
+        // ローカルの視聴状態をクリア
+        ref.read(viewedStoryIdsProvider.notifier).state = {};
+        ref.read(viewedUserIdsProvider.notifier).state = {};
+
+        // ストーリーリストを更新
+        if (currentUserId != null) {
+          ref.invalidate(userStoriesProvider((userId: widget.userId, currentUserId: currentUserId)));
+        }
+
+        showCupertinoDialog(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('視聴履歴をクリア'),
+            content: Text('${response.clearedCount}件の視聴履歴をクリアしました。\nもう一度投稿を視聴できます！'),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('エラーが発生しました'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
     }
   }
 

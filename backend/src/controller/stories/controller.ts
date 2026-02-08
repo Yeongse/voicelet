@@ -1,6 +1,7 @@
 import { prisma } from '../../database'
 import type { ServerInstance } from '../../lib/fastify'
 import { authenticate, type AuthenticatedRequest } from '../../lib/auth'
+import { generateAvatarDownloadSignedUrl } from '../../services/storage'
 import { errorResponseSchema, storiesQuerySchema, storiesResponseSchema } from './schema'
 
 export default async function (fastify: ServerInstance) {
@@ -60,7 +61,7 @@ export default async function (fastify: ServerInstance) {
       const userStoriesMap = new Map<
         string,
         {
-          user: { id: string; name: string; avatarUrl: string | null }
+          user: { id: string; name: string; avatarPath: string | null }
           stories: Array<{ id: string; duration: number; createdAt: string; isViewed: boolean }>
           latestCreatedAt: Date
           hasUnviewed: boolean
@@ -90,7 +91,7 @@ export default async function (fastify: ServerInstance) {
             user: {
               id: whisper.user.id,
               name: whisper.user.name ?? '',
-              avatarUrl: whisper.user.avatarPath,
+              avatarPath: whisper.user.avatarPath,
             },
             stories: [storyItem],
             latestCreatedAt: whisper.createdAt,
@@ -107,9 +108,28 @@ export default async function (fastify: ServerInstance) {
       }
 
       // ユーザーを最新投稿順でソート
-      const data = Array.from(userStoriesMap.values())
-        .sort((a, b) => b.latestCreatedAt.getTime() - a.latestCreatedAt.getTime())
-        .map(({ user, stories, hasUnviewed }) => ({ user, stories, hasUnviewed }))
+      const sortedUserStories = Array.from(userStoriesMap.values()).sort(
+        (a, b) => b.latestCreatedAt.getTime() - a.latestCreatedAt.getTime(),
+      )
+
+      // 署名付きURLを並列で生成
+      const data = await Promise.all(
+        sortedUserStories.map(async ({ user, stories, hasUnviewed }) => {
+          let avatarUrl: string | null = null
+          if (user.avatarPath) {
+            try {
+              avatarUrl = await generateAvatarDownloadSignedUrl(user.avatarPath, 60)
+            } catch (err) {
+              fastify.log.warn({ err, avatarPath: user.avatarPath }, 'Failed to generate avatar URL')
+            }
+          }
+          return {
+            user: { id: user.id, name: user.name, avatarUrl },
+            stories,
+            hasUnviewed,
+          }
+        }),
+      )
 
       return reply.send({ data })
     },

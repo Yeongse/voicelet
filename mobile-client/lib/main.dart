@@ -12,7 +12,6 @@ import 'features/users/pages/user_detail_page.dart';
 import 'features/recording/pages/recording_page.dart';
 import 'features/recording/pages/preview_page.dart';
 import 'features/splash/pages/splash_page.dart';
-import 'features/whisper/pages/whisper_list_page.dart';
 import 'features/home/pages/home_page.dart';
 import 'features/home/pages/story_viewer_page.dart';
 import 'features/home/pages/my_story_viewer_page.dart';
@@ -26,6 +25,7 @@ import 'features/follow/pages/follow_requests_page.dart';
 import 'features/follow/pages/follow_list_page.dart';
 import 'features/search/pages/search_page.dart';
 import 'features/qr_code/pages/qr_code_page.dart';
+import 'features/legal/pages/legal_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,14 +45,8 @@ Future<void> main() async {
 final _router = GoRouter(
   initialLocation: '/',
   routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const SplashPage(),
-    ),
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginPage(),
-    ),
+    GoRoute(path: '/', builder: (context, state) => const SplashPage()),
+    GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
     GoRoute(
       path: '/auth/signup',
       builder: (context, state) => const SignUpPage(),
@@ -61,10 +55,7 @@ final _router = GoRouter(
       path: '/auth/onboarding',
       builder: (context, state) => const OnboardingPage(),
     ),
-    GoRoute(
-      path: '/users',
-      builder: (context, state) => const UserListPage(),
-    ),
+    GoRoute(path: '/users', builder: (context, state) => const UserListPage()),
     GoRoute(
       path: '/users/:userId',
       builder: (context, state) {
@@ -98,14 +89,7 @@ final _router = GoRouter(
         );
       },
     ),
-    GoRoute(
-      path: '/dev/whispers',
-      builder: (context, state) => const WhisperListPage(),
-    ),
-    GoRoute(
-      path: '/home',
-      builder: (context, state) => const HomePage(),
-    ),
+    GoRoute(path: '/home', builder: (context, state) => const HomePage()),
     GoRoute(
       path: '/story-viewer',
       builder: (context, state) {
@@ -122,10 +106,7 @@ final _router = GoRouter(
         return MyStoryViewerPage(whisper: whisper);
       },
     ),
-    GoRoute(
-      path: '/profile',
-      builder: (context, state) => const ProfilePage(),
-    ),
+    GoRoute(path: '/profile', builder: (context, state) => const ProfilePage()),
     GoRoute(
       path: '/profile/edit',
       builder: (context, state) => const ProfileEditPage(),
@@ -134,13 +115,17 @@ final _router = GoRouter(
       path: '/follow-requests',
       builder: (context, state) => const FollowRequestsPage(),
     ),
+    GoRoute(path: '/search', builder: (context, state) => const SearchPage()),
+    GoRoute(path: '/qr-code', builder: (context, state) => const QrCodePage()),
     GoRoute(
-      path: '/search',
-      builder: (context, state) => const SearchPage(),
+      path: '/legal/privacy-policy',
+      builder: (context, state) =>
+          const LegalPage(type: LegalDocumentType.privacyPolicy),
     ),
     GoRoute(
-      path: '/qr-code',
-      builder: (context, state) => const QrCodePage(),
+      path: '/legal/terms-of-service',
+      builder: (context, state) =>
+          const LegalPage(type: LegalDocumentType.termsOfService),
     ),
   ],
 );
@@ -152,6 +137,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'Voicelet',
+      debugShowCheckedModeBanner: false,
       theme: AppTheme.themeData,
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -159,10 +145,7 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('en'),
-        Locale('ja'),
-      ],
+      supportedLocales: const [Locale('en'), Locale('ja')],
       routerConfig: _router,
     );
   }

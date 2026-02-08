@@ -33,6 +33,8 @@
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>音声を録音するためにマイクへのアクセスが必要です</string>
+	<key>NSCameraUsageDescription</key>
+	<string>QRコードをスキャンしてユーザーをフォローするために使用します</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>CFBundleURLTypes</key>

@@ -1,11 +1,8 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
-import { prisma } from '../../database'
 import Fastify from 'fastify'
 import type { FastifyInstance } from 'fastify'
-import {
-  serializerCompiler,
-  validatorCompiler,
-} from 'fastify-type-provider-zod'
+import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { prisma } from '../../database'
 import discoverController from './controller'
 
 describe('GET /api/discover - おすすめユーザー一覧API', () => {
@@ -127,6 +124,53 @@ describe('GET /api/discover - おすすめユーザー一覧API', () => {
     expect(response.statusCode).toBe(200)
     expect(body.data).toHaveLength(0)
   })
+
+  it('鍵アカウント（isPrivate=true）のユーザーはおすすめに表示されない', async () => {
+    // 既存ユーザーを鍵アカウントに変更
+    await prisma.user.update({
+      where: { id: otherUser.id },
+      data: { isPrivate: true },
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/?userId=${viewerUser.id}&page=1&limit=10`,
+    })
+
+    const body = JSON.parse(response.body)
+    expect(response.statusCode).toBe(200)
+    expect(body.data).toHaveLength(0)
+  })
+
+  it('鍵アカウントを公開に変更すると次回取得時からおすすめに表示される', async () => {
+    // まず鍵アカウントに変更
+    await prisma.user.update({
+      where: { id: otherUser.id },
+      data: { isPrivate: true },
+    })
+
+    // 鍵アカウント時は表示されない
+    const response1 = await app.inject({
+      method: 'GET',
+      url: `/?userId=${viewerUser.id}&page=1&limit=10`,
+    })
+    const body1 = JSON.parse(response1.body)
+    expect(body1.data).toHaveLength(0)
+
+    // 公開に戻す
+    await prisma.user.update({
+      where: { id: otherUser.id },
+      data: { isPrivate: false },
+    })
+
+    // 公開後は表示される
+    const response2 = await app.inject({
+      method: 'GET',
+      url: `/?userId=${viewerUser.id}&page=1&limit=10`,
+    })
+    const body2 = JSON.parse(response2.body)
+    expect(body2.data).toHaveLength(1)
+  })
 })
 
 describe('GET /api/discover/:targetUserId/stories - おすすめユーザーストーリーAPI', () => {
@@ -212,12 +256,8 @@ describe('GET /api/discover/:targetUserId/stories - おすすめユーザース�
     const body = JSON.parse(response.body)
     expect(response.statusCode).toBe(200)
 
-    const viewedStory = body.stories.find(
-      (s: { id: string }) => s.id === viewedWhisper.id,
-    )
-    const unviewedStory = body.stories.find(
-      (s: { id: string }) => s.id === unviewedWhisper.id,
-    )
+    const viewedStory = body.stories.find((s: { id: string }) => s.id === viewedWhisper.id)
+    const unviewedStory = body.stories.find((s: { id: string }) => s.id === unviewedWhisper.id)
 
     expect(viewedStory.isViewed).toBe(true)
     expect(unviewedStory.isViewed).toBe(false)

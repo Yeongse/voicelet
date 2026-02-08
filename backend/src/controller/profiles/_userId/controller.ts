@@ -95,6 +95,7 @@ export default async function (fastify: ServerInstance) {
       return reply.send({
         id: user.id,
         email: user.email,
+        username: user.username,
         name: user.name,
         bio: user.bio,
         age: calculateAge(user.birthMonth),

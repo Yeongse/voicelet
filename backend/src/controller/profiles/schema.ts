@@ -1,11 +1,22 @@
 import { z } from 'zod'
 
 /**
+ * usernameバリデーションスキーマ
+ */
+export const usernameSchema = z
+  .string()
+  .min(3, 'ユーザー名は3文字以上です')
+  .max(30, 'ユーザー名は30文字以下です')
+  .regex(/^[a-zA-Z0-9_.]+$/, '半角英数字、アンダースコア、ピリオドのみ使用できます')
+  .transform((val) => val.replace(/^@/, ''))
+
+/**
  * 自分のプロフィールレスポンススキーマ（birthMonth含む）
  */
 export const myProfileResponseSchema = z.object({
   id: z.string(),
   email: z.string(),
+  username: z.string().nullable(),
   name: z.string().nullable(),
   bio: z.string().nullable(),
   birthMonth: z.string().nullable(),
@@ -24,6 +35,7 @@ export const myProfileResponseSchema = z.object({
 export const publicProfileResponseSchema = z.object({
   id: z.string(),
   email: z.string(),
+  username: z.string().nullable(),
   name: z.string().nullable(),
   bio: z.string().nullable(),
   age: z.number().nullable(),
@@ -39,9 +51,10 @@ export const publicProfileResponseSchema = z.object({
 
 /**
  * プロフィール新規登録リクエストスキーマ
- * 表示名は必須
+ * 表示名は必須、usernameは必須
  */
 export const registerProfileRequestSchema = z.object({
+  username: usernameSchema,
   name: z.string().min(1, '表示名は必須です').max(100),
   bio: z.string().max(500).optional(),
   birthMonth: z
@@ -64,6 +77,7 @@ export const registerProfileRequestSchema = z.object({
  * プロフィール更新リクエストスキーマ
  */
 export const updateProfileRequestSchema = z.object({
+  username: usernameSchema.optional(),
   name: z.string().min(1).max(100).optional(),
   bio: z.string().max(500).optional(),
   birthMonth: z

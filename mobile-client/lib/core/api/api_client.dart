@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ApiClient {
@@ -9,6 +10,12 @@ class ApiClient {
   late final Dio _dio;
 
   static String get _baseUrl {
+    // .envでAPI_BASE_URLが設定されている場合はそれを使用（実機テスト用）
+    final envUrl = dotenv.env['API_BASE_URL'];
+    if (envUrl != null && envUrl.isNotEmpty) {
+      return envUrl;
+    }
+
     // エミュレータからlocalhostへアクセスする場合:
     // Android: 10.0.2.2
     // iOS Simulator: localhost

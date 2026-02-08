@@ -8,6 +8,7 @@ class Profile with _$Profile {
   const factory Profile({
     required String id,
     required String email,
+    String? username,
     String? name,
     String? bio,
     String? birthMonth,

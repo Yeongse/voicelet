@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/shimmer.dart';
 import '../models/home_models.dart';
 import '../providers/home_providers.dart';
 import 'add_story_button.dart';
@@ -98,26 +99,12 @@ class MyStorySection extends ConsumerWidget {
   }
 
   Widget _buildShimmer() {
-    return Column(
+    return const Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppTheme.bgTertiary.withValues(alpha: 0.5),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          width: 48,
-          height: 12,
-          decoration: BoxDecoration(
-            color: AppTheme.bgTertiary.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ),
+        ShimmerCircle(size: 64),
+        SizedBox(height: 6),
+        ShimmerBox(width: 48, height: 12),
       ],
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -216,6 +217,12 @@ class _ProfileContent extends ConsumerWidget {
               ),
             ],
           ),
+
+          // ユーザー名
+          if (profile.username != null) ...[
+            const SizedBox(height: 4),
+            _UsernameDisplay(username: profile.username!),
+          ],
           const SizedBox(height: 8),
 
           // 年齢
@@ -707,6 +714,74 @@ class _FollowCountRow extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// ユーザー名表示ウィジェット（タップでコピー）
+class _UsernameDisplay extends StatelessWidget {
+  final String username;
+
+  const _UsernameDisplay({required this.username});
+
+  void _copyToClipboard(BuildContext context) {
+    Clipboard.setData(ClipboardData(text: '@$username'));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              Icons.check_circle_outline_rounded,
+              color: AppTheme.success,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'ユーザー名をコピーしました',
+              style: TextStyle(color: AppTheme.textPrimary),
+            ),
+          ],
+        ),
+        backgroundColor: AppTheme.bgElevated,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        ),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _copyToClipboard(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppTheme.bgSecondary.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '@$username',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.copy_rounded,
+              size: 14,
+              color: AppTheme.textTertiary,
+            ),
+          ],
+        ),
       ),
     );
   }

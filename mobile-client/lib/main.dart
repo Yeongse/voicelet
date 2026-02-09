@@ -26,6 +26,7 @@ import 'features/follow/pages/follow_list_page.dart';
 import 'features/search/pages/search_page.dart';
 import 'features/qr_code/pages/qr_code_page.dart';
 import 'features/legal/pages/legal_page.dart';
+import 'features/settings/pages/settings_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -117,6 +118,7 @@ final _router = GoRouter(
     ),
     GoRoute(path: '/search', builder: (context, state) => const SearchPage()),
     GoRoute(path: '/qr-code', builder: (context, state) => const QrCodePage()),
+    GoRoute(path: '/settings', builder: (context, state) => const SettingsPage()),
     GoRoute(
       path: '/legal/privacy-policy',
       builder: (context, state) =>

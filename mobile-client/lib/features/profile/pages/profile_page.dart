@@ -300,12 +300,7 @@ class _ProfileContent extends ConsumerWidget {
               value: profile.birthMonth!,
             ),
           ],
-
-          // 法的情報セクション（自分のプロフィールのみ）
-          if (isMyProfile) ...[
-            const SizedBox(height: 32),
-            const _LegalLinksSection(),
-          ],
+          const SizedBox(height: 32),
         ],
       ),
     );
@@ -726,88 +721,6 @@ class _FollowCountRow extends ConsumerWidget {
 }
 
 /// ユーザー名表示ウィジェット（タップでコピー）
-/// 法的情報リンクセクション
-class _LegalLinksSection extends StatelessWidget {
-  const _LegalLinksSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.bgSecondary,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppTheme.textTertiary.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '法的情報',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _buildLegalLinkTile(
-            context,
-            icon: Icons.description_outlined,
-            label: '利用規約',
-            route: '/legal/terms-of-service',
-          ),
-          const SizedBox(height: 8),
-          _buildLegalLinkTile(
-            context,
-            icon: Icons.privacy_tip_outlined,
-            label: 'プライバシーポリシー',
-            route: '/legal/privacy-policy',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLegalLinkTile(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required String route,
-  }) {
-    return InkWell(
-      onTap: () => context.push(route),
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-        child: Row(
-          children: [
-            Icon(icon, size: 20, color: AppTheme.textSecondary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 15,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-            ),
-            Icon(
-              Icons.chevron_right,
-              size: 20,
-              color: AppTheme.textTertiary,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _UsernameDisplay extends StatelessWidget {
   final String username;
 

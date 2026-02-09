@@ -1,8 +1,12 @@
 import { prisma } from '../../../database'
 import { calculateAge } from '../../../lib/age'
-import { authenticate } from '../../../lib/auth'
+import { authenticate, deleteAuthUser } from '../../../lib/auth'
 import type { ServerInstance } from '../../../lib/fastify'
-import { generateAvatarDownloadSignedUrl } from '../../../services/storage'
+import {
+  deleteAvatarFiles,
+  deleteWhisperFiles,
+  generateAvatarDownloadSignedUrl,
+} from '../../../services/storage'
 import {
   errorResponseSchema,
   myProfileResponseSchema,
@@ -283,7 +287,7 @@ export default async function (fastify: ServerInstance) {
 
   /**
    * DELETE /api/profiles/me
-   * 自分のアカウントを削除
+   * 自分のアカウントを完全に削除（DB、Cloud Storage、Supabase Auth）
    */
   fastify.delete(
     '/',
@@ -292,32 +296,77 @@ export default async function (fastify: ServerInstance) {
       schema: {
         tags: ['Profile'],
         summary: 'アカウント削除',
-        description: '認証済みユーザーのアカウントを削除します。',
+        description:
+          '認証済みユーザーのアカウントを完全に削除します。DB、Cloud Storage、Supabase Authからすべてのデータを物理削除します。',
         response: {
           200: successResponseSchema,
           401: errorResponseSchema,
+          500: errorResponseSchema,
         },
       },
     },
     async (request, reply) => {
       const userId = request.user.sub
 
+      fastify.log.info({ userId }, 'Account deletion started')
+
+      // ユーザーとWhisperファイル名を取得
       const user = await prisma.user.findUnique({
         where: { id: userId },
+        include: {
+          whispers: {
+            select: { fileName: true },
+          },
+        },
       })
 
       if (!user) {
         return reply.status(401).send({ message: 'ユーザーが見つかりません' })
       }
 
-      // TODO: Cloud Storageからアバター画像を削除
-      // TODO: Supabase Authからユーザーを削除
+      // 1. Cloud Storageからファイルを削除（DBにファイルパス情報があるため先に実行）
+      // Whisper音声ファイルの削除（ベストエフォート）
+      const whisperFileNames = user.whispers.map((w) => w.fileName)
+      if (whisperFileNames.length > 0) {
+        fastify.log.info({ userId, fileCount: whisperFileNames.length }, 'Deleting whisper files')
+        const whisperResult = await deleteWhisperFiles(whisperFileNames, fastify.log)
+        fastify.log.info(
+          { userId, succeeded: whisperResult.succeeded, failed: whisperResult.failed },
+          'Whisper files deletion completed',
+        )
+      }
 
-      // ローカルDBからユーザーを削除
-      await prisma.user.delete({
-        where: { id: userId },
-      })
+      // アバター画像の削除（ベストエフォート）
+      try {
+        fastify.log.info({ userId }, 'Deleting avatar files')
+        await deleteAvatarFiles(userId)
+        fastify.log.info({ userId }, 'Avatar files deletion completed')
+      } catch (err) {
+        fastify.log.warn({ err, userId }, 'Failed to delete avatar files')
+      }
 
+      // 2. DBからユーザーを削除（Cascade Deleteで関連レコードも削除）
+      try {
+        fastify.log.info({ userId }, 'Deleting user from database')
+        await prisma.user.delete({
+          where: { id: userId },
+        })
+        fastify.log.info({ userId }, 'User deleted from database')
+      } catch (err) {
+        fastify.log.error({ err, userId }, 'Failed to delete user from database')
+        return reply.status(500).send({ message: 'アカウント削除に失敗しました' })
+      }
+
+      // 3. Supabase Authからユーザーを削除（DB削除後に実行）
+      fastify.log.info({ userId }, 'Deleting user from Supabase Auth')
+      const authResult = await deleteAuthUser(userId)
+      if (authResult.success) {
+        fastify.log.info({ userId }, 'User deleted from Supabase Auth')
+      } else {
+        fastify.log.warn({ userId, error: authResult.error }, 'Failed to delete user from Supabase Auth')
+      }
+
+      fastify.log.info({ userId }, 'Account deletion completed')
       return reply.send({ message: 'アカウントを削除しました' })
     },
   )

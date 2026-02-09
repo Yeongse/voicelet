@@ -109,6 +109,26 @@ export async function optionalAuthenticate(request: FastifyRequest): Promise<voi
   }
 }
 
+/**
+ * Supabase Authからユーザーを削除（管理者権限で実行）
+ * @param userId 削除対象のユーザーID
+ * @returns 成功時は { success: true }、失敗時は { success: false, error: string }
+ */
+export async function deleteAuthUser(
+  userId: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  try {
+    const { error } = await supabase.auth.admin.deleteUser(userId)
+    if (error) {
+      return { success: false, error: error.message }
+    }
+    return { success: true }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return { success: false, error: message }
+  }
+}
+
 // Fastifyの型拡張
 declare module 'fastify' {
   interface FastifyInstance {

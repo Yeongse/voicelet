@@ -88,6 +88,46 @@ export async function deleteWhisperFile(fileName: string): Promise<void> {
   }
 }
 
+/**
+ * 複数のWhisper音声ファイルを一括削除（ベストエフォート）
+ * 個別ファイルの削除失敗はログ記録して続行
+ * @param fileNames 削除対象のファイル名配列
+ * @param logger オプショナルなロガー（エラーログ用）
+ * @returns 削除結果（成功/失敗件数）
+ */
+export async function deleteWhisperFiles(
+  fileNames: string[],
+  logger?: { warn: (obj: object, msg: string) => void },
+): Promise<{ succeeded: number; failed: number }> {
+  if (fileNames.length === 0) {
+    return { succeeded: 0, failed: 0 }
+  }
+
+  const bucket = storage.bucket(bucketName)
+  let succeeded = 0
+  let failed = 0
+
+  await Promise.all(
+    fileNames.map(async (fileName) => {
+      try {
+        const file = bucket.file(fileName)
+        const [exists] = await file.exists()
+        if (exists) {
+          await file.delete()
+        }
+        succeeded++
+      } catch (err) {
+        failed++
+        if (logger) {
+          logger.warn({ err, fileName }, 'Failed to delete whisper file')
+        }
+      }
+    }),
+  )
+
+  return { succeeded, failed }
+}
+
 // ===========================================
 // アバター画像用関数
 // ===========================================

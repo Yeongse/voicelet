@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:audioplayers/audioplayers.dart';
+import '../../../core/services/review_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/dialogs.dart';
 import '../../ads/widgets/banner_ad_widget.dart';
@@ -170,6 +171,8 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
         ref.read(viewedStoryIdsProvider.notifier).update((state) {
           return {...state, story.id};
         });
+        // 初回視聴を記録（レビュー要求のため）
+        ref.read(reviewServiceProvider).markFirstStoryViewed();
       } catch (e) {
         // 409エラー（既に視聴済み）の場合は次へ進むか終了
         final is409Error = e is DioException && e.response?.statusCode == 409;

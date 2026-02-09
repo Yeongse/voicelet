@@ -205,16 +205,8 @@ class ProfileDrawer extends ConsumerWidget {
           icon: Icons.settings_outlined,
           label: '設定',
           onTap: () {
-            // TODO: 設定画面への遷移
             Navigator.of(context).pop();
-          },
-        ),
-        _MenuTile(
-          icon: Icons.help_outline_rounded,
-          label: 'ヘルプ',
-          onTap: () {
-            // TODO: ヘルプ画面への遷移
-            Navigator.of(context).pop();
+            context.push('/settings');
           },
         ),
       ],

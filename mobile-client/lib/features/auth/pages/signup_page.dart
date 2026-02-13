@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -34,6 +36,30 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
 
     try {
       await ref.read(authProvider.notifier).signInWithGoogle();
+      // 認証状態の変更はref.listenで処理される
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _signUpWithApple() async {
+    final hasConsented = ref.read(legalConsentProvider);
+    if (!hasConsented) {
+      setState(() => _error = '利用規約とプライバシーポリシーに同意してください');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      await ref.read(authProvider.notifier).signInWithApple();
       // 認証状態の変更はref.listenで処理される
     } catch (e) {
       setState(() => _error = e.toString());
@@ -129,6 +155,26 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                     ),
                   ),
                 ),
+                // Appleログインボタン（iOSのみ）
+                if (Platform.isIOS) ...[
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: SignInButton(
+                        Buttons.apple,
+                        text: 'Appleでログイン',
+                        onPressed: _isLoading ? () {} : _signUpWithApple,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(26),
+                        ),
+                        elevation: 2,
+                      ),
+                    ),
+                  ),
+                ],
                 // エラーメッセージ
                 if (_error != null) ...[
                   const SizedBox(height: 24),

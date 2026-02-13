@@ -49,9 +49,11 @@ class ProfilePage extends ConsumerWidget {
                     );
 
                     if (confirm && context.mounted) {
-                      // 先に画面遷移してからサインアウトを実行
-                      context.go('/login');
-                      ref.read(authProvider.notifier).signOut();
+                      // サインアウトを実行してからスプラッシュ画面へ遷移
+                      await ref.read(authProvider.notifier).signOut();
+                      if (context.mounted) {
+                        context.go('/');
+                      }
                     }
                   },
                 ),

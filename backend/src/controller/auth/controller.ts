@@ -53,11 +53,11 @@ export default async function (fastify: ServerInstance) {
         return reply.status(400).send({ message: '無効なユーザー情報です' })
       }
 
-      // DBにユーザーが存在するかチェック（IDまたはemailで検索）
-      const existingUser = await prisma.user.findFirst({
-        where: {
-          OR: [{ id: supabaseUserId }, { email }],
-        },
+      // DBにユーザーが存在するかチェック（IDのみで検索）
+      // 注意: emailでの検索を行うと、アカウント削除後に同じメールアドレスで
+      // 再サインアップした際に、削除済みユーザーのデータが見つかる問題がある
+      const existingUser = await prisma.user.findUnique({
+        where: { id: supabaseUserId },
       })
 
       return reply.send({

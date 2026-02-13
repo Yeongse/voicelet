@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sign_in_button/sign_in_button.dart';
 
 import '../providers/auth_provider.dart';
 
@@ -191,6 +194,36 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           : 'アカウントをお持ちでない方はこちら',
                     ),
                   ),
+
+                  // ソーシャルログインセクション（iOSのみAppleボタン表示）
+                  if (Platform.isIOS) ...[
+                    const SizedBox(height: 24),
+                    const Row(
+                      children: [
+                        Expanded(child: Divider()),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            'または',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                        Expanded(child: Divider()),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    SignInButton(
+                      Buttons.apple,
+                      text: 'Appleでログイン',
+                      onPressed: authState is AuthStateLoading
+                          ? () {} // ローディング中は何もしない
+                          : () => ref.read(authProvider.notifier).signInWithApple(),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 2,
+                    ),
+                  ],
                 ],
               ),
             ),

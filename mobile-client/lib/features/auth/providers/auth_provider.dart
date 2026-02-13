@@ -1,10 +1,16 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:crypto/crypto.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/api/api_client.dart';
 import '../models/profile.dart';
+import '../../follow/providers/follow_provider.dart';
 import '../../home/providers/home_providers.dart';
 
 /// 認証状態
@@ -59,7 +65,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (session != null) {
         await _syncWithBackend(session);
       } else {
+        // 外部からセッションが無効化された場合（Apple認証取り消し等）
         state = const AuthStateUnauthenticated();
+        _clearLocalCaches();
       }
     });
 
@@ -70,6 +78,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } else {
       state = const AuthStateUnauthenticated();
     }
+  }
+
+  /// ローカルキャッシュを全てクリア
+  void _clearLocalCaches() {
+    // ストーリー視聴状態
+    _ref.read(viewedStoryIdsProvider.notifier).state = {};
+    _ref.read(viewedUserIdsProvider.notifier).state = {};
+    // フォロー関連キャッシュ
+    _ref.read(followingListCacheProvider.notifier).state = {};
+    _ref.read(followersListCacheProvider.notifier).state = {};
+    _ref.read(followCountDeltaProvider.notifier).state = {};
+    _ref.read(userFollowStatusProvider.notifier).state = {};
   }
 
   /// バックエンドAPIと同期し、登録状態を確認
@@ -243,29 +263,75 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// Appleでサインイン
+  /// Appleでサインイン（ネイティブSDK方式）
   Future<void> signInWithApple() async {
+    // iOSのみサポート
+    if (!Platform.isIOS) {
+      state = const AuthStateError(message: 'Apple認証はiOSでのみ利用可能です');
+      return;
+    }
+
     try {
       state = const AuthStateLoading();
 
-      final response = await _supabase.auth.signInWithOAuth(
-        OAuthProvider.apple,
-        redirectTo: 'io.supabase.voicelet://login-callback/',
+      // nonce生成（Supabase認証用）
+      final rawNonce = _supabase.auth.generateRawNonce();
+      final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+
+      // Apple認証を実行
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: hashedNonce,
       );
 
-      if (!response) {
-        state =
-            const AuthStateError(message: 'Appleサインインがキャンセルされました');
+      // Identity Tokenの取得を確認
+      final idToken = credential.identityToken;
+      if (idToken == null) {
+        state = const AuthStateError(message: 'Apple認証トークンの取得に失敗しました');
+        return;
       }
 
-      // OAuth認証はリダイレクトで完了するため、ここでは状態を維持
-      // onAuthStateChangeで認証完了を検知
+      // Supabase認証
+      final response = await _supabase.auth.signInWithIdToken(
+        provider: OAuthProvider.apple,
+        idToken: idToken,
+        nonce: rawNonce,
+      );
+
+      if (response.session != null) {
+        await _syncWithBackend(response.session!);
+      } else {
+        state = const AuthStateError(message: 'Appleサインインに失敗しました');
+      }
+    } on SignInWithAppleAuthorizationException catch (e) {
+      // Apple認証固有のエラーハンドリング
+      switch (e.code) {
+        case AuthorizationErrorCode.canceled:
+          // ユーザーキャンセル時は静かにログイン画面に戻る
+          state = const AuthStateUnauthenticated();
+          return;
+        case AuthorizationErrorCode.failed:
+        case AuthorizationErrorCode.invalidResponse:
+        case AuthorizationErrorCode.notHandled:
+          state = const AuthStateError(message: 'Appleサインインに失敗しました');
+        case AuthorizationErrorCode.notInteractive:
+          state = const AuthStateError(message: 'Appleサインインを利用できません');
+        case AuthorizationErrorCode.unknown:
+          state = const AuthStateError(message: 'Appleサインインに失敗しました');
+      }
     } on AuthException catch (e) {
       state = AuthStateError(message: _getErrorMessage(e));
-      rethrow;
     } catch (e) {
-      state = AuthStateError(message: 'Appleサインインに失敗しました');
-      rethrow;
+      // ネットワークエラーなど
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('network')) {
+        state = const AuthStateError(message: 'ネットワーク接続を確認してください');
+      } else {
+        state = const AuthStateError(message: 'しばらく時間をおいて再度お試しください');
+      }
     }
   }
 
@@ -280,12 +346,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
       await _supabase.auth.signOut();
       state = const AuthStateUnauthenticated();
-      // セッション中の視聴状態をクリア（StateProviderはAPIリクエストを発火しない）
-      _ref.read(viewedStoryIdsProvider.notifier).state = {};
-      _ref.read(viewedUserIdsProvider.notifier).state = {};
+
+      // ローカルキャッシュを全てクリア
+      _clearLocalCaches();
+
       // 注意: FutureProvider（myProfileProvider, storiesProvider, discoverProvider）は
-      // invalidateするとAPIリクエストが発火して認証エラーになるため、ここではinvalidateしない。
-      // 次回ログイン時にcurrentUserIdProviderが変わることで自動的に再取得される。
+      // currentUserIdProviderをwatchしているため、authStateがunauthenticatedになると
+      // userIdがnullになり、自動的にローディング状態（Completer.future）になる。
     } catch (e) {
       state = AuthStateError(message: 'ログアウトに失敗しました');
     }

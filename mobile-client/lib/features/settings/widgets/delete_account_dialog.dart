@@ -59,13 +59,13 @@ class _DeleteAccountDialogState extends ConsumerState<DeleteAccountDialog> {
     // 削除成功時はトップ画面へ強制遷移
     ref.listen<AccountDeletionState>(accountDeletionProvider, (previous, next) {
       if (next is AccountDeletionSuccess) {
+        // async gap前にルーター参照を保持
+        final router = GoRouter.of(context);
         // すべてのオーバーレイ（モーダル、ダイアログ）を閉じてからトップ画面へ遷移
         // rootNavigator: true でルートナビゲーターを取得し、すべてのルートをpop
         Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
-        // go()でナビゲーションスタックを完全に置き換え
-        if (context.mounted) {
-          context.go('/');
-        }
+        // ルーター参照を使って遷移（context.mountedに依存しない）
+        router.go('/');
       }
     });
 

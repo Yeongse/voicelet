@@ -3,10 +3,12 @@ import '../../../core/theme/app_theme.dart';
 
 /// ストーリーアバターウィジェット
 /// 未視聴時はグラデーションボーダー、視聴済みはグレーボーダー
+/// 投稿がない場合は枠線なし＆タップ無効
 class StoryAvatar extends StatelessWidget {
   final String? avatarUrl;
   final String name;
   final bool hasUnviewed;
+  final bool hasStory;
   final double size;
   final VoidCallback? onTap;
 
@@ -15,6 +17,7 @@ class StoryAvatar extends StatelessWidget {
     this.avatarUrl,
     required this.name,
     required this.hasUnviewed,
+    this.hasStory = true,
     this.size = 64,
     this.onTap,
   });
@@ -24,8 +27,12 @@ class StoryAvatar extends StatelessWidget {
     final borderWidth = size * 0.05;
     final innerPadding = size * 0.04;
 
+    // 投稿がない場合は枠線なし＆タップ無効
+    final showGradient = hasStory && hasUnviewed;
+    final showBorder = hasStory && !hasUnviewed;
+
     return GestureDetector(
-      onTap: onTap,
+      onTap: hasStory ? onTap : null,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -34,13 +41,13 @@ class StoryAvatar extends StatelessWidget {
             height: size,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: hasUnviewed ? AppTheme.gradientAccent : null,
-              border: hasUnviewed
-                  ? null
-                  : Border.all(
+              gradient: showGradient ? AppTheme.gradientAccent : null,
+              border: showBorder
+                  ? Border.all(
                       color: AppTheme.textTertiary.withValues(alpha: 0.5),
                       width: borderWidth,
-                    ),
+                    )
+                  : null,
             ),
             padding: EdgeInsets.all(borderWidth),
             child: Container(

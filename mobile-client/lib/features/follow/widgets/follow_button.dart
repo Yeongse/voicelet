@@ -126,7 +126,7 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
           child: ElevatedButton(
             onPressed: _isLoading ? null : _onPressed,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.accentPrimary,
+              backgroundColor: Colors.black,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               shape: RoundedRectangleBorder(
@@ -213,7 +213,7 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
       case FollowStatus.none:
         return ElevatedButton.styleFrom(
           backgroundColor: AppTheme.accentPrimary,
-          foregroundColor: Colors.white,
+          foregroundColor: Colors.black,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),

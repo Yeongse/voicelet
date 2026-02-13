@@ -133,6 +133,28 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
                       ],
                     ],
                   ),
+
+                  // ユーザー名
+                  if (profile.username != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '@${profile.username}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+
+                  // ID
+                  const SizedBox(height: 4),
+                  Text(
+                    'ID: ${profile.id}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.textTertiary,
+                    ),
+                  ),
                   const SizedBox(height: 8),
 
                   // Bio

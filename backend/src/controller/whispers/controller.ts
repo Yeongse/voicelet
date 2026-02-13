@@ -280,6 +280,13 @@ export default async function (fastify: ServerInstance) {
         }
       }
 
+      // GCS上にファイルが存在するか確認
+      const exists = await fileExists(whisper.fileName)
+      if (!exists) {
+        fastify.log.warn({ fileName: whisper.fileName, whisperId }, 'Audio file not found in GCS')
+        return reply.status(404).send({ message: '音声ファイルが見つかりません' })
+      }
+
       const expiresInMinutes = 60
       const expiresAt = new Date()
       expiresAt.setMinutes(expiresAt.getMinutes() + expiresInMinutes)

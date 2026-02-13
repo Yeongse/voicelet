@@ -42,17 +42,28 @@ export default async function (fastify: ServerInstance) {
       const followingIds = following.map((f) => f.followingId)
 
       const now = new Date()
+      // 24時間以内に作成されたWhisperのみを対象とする
+      const twentyFourHoursAgo = new Date()
+      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24)
 
       // おすすめユーザーを取得（自分とフォロー中を除く、鍵アカウントも除外）
-      // Whisperがあるユーザーを優先し、ないユーザーも含める
+      // 24時間以内に投稿があるユーザーのみを対象とする
       const discoverUsers = await prisma.user.findMany({
         where: {
           id: { notIn: [userId, ...followingIds] },
           isPrivate: false,
+          // 24時間以内に有効なWhisperがあるユーザーのみ
+          whispers: {
+            some: {
+              createdAt: { gte: twentyFourHoursAgo },
+              expiresAt: { gt: now },
+            },
+          },
         },
         include: {
           whispers: {
             where: {
+              createdAt: { gte: twentyFourHoursAgo },
               expiresAt: { gt: now },
             },
             include: {
@@ -64,6 +75,7 @@ export default async function (fastify: ServerInstance) {
             select: {
               whispers: {
                 where: {
+                  createdAt: { gte: twentyFourHoursAgo },
                   expiresAt: { gt: now },
                 },
               },
@@ -181,10 +193,15 @@ export default async function (fastify: ServerInstance) {
       }
 
       const now = new Date()
-      // 有効なWhisperを取得（視聴済みも含む）
+      // 24時間以内に作成されたWhisperのみを対象とする
+      const twentyFourHoursAgo = new Date()
+      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24)
+
+      // 有効なWhisperを取得（視聴済みも含む、24時間以内のみ）
       const whispers = await prisma.whisper.findMany({
         where: {
           userId: targetUserId,
+          createdAt: { gte: twentyFourHoursAgo },
           expiresAt: { gt: now },
         },
         include: {

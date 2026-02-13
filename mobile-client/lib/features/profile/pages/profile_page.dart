@@ -49,11 +49,12 @@ class ProfilePage extends ConsumerWidget {
                     );
 
                     if (confirm && context.mounted) {
-                      // サインアウトを実行してからスプラッシュ画面へ遷移
+                      // async gap前にルーター参照を保持
+                      final router = GoRouter.of(context);
+
                       await ref.read(authProvider.notifier).signOut();
-                      if (context.mounted) {
-                        context.go('/');
-                      }
+                      // ルーター参照を使って遷移（context.mountedに依存しない）
+                      router.go('/');
                     }
                   },
                 ),
@@ -225,6 +226,10 @@ class _ProfileContent extends ConsumerWidget {
             const SizedBox(height: 4),
             _UsernameDisplay(username: profile.username!),
           ],
+          const SizedBox(height: 4),
+
+          // ID
+          _IdDisplay(id: profile.id),
           const SizedBox(height: 8),
 
           // 年齢
@@ -785,6 +790,67 @@ class _UsernameDisplay extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// ID表示ウィジェット（タップでコピー）
+class _IdDisplay extends StatelessWidget {
+  final String id;
+
+  const _IdDisplay({required this.id});
+
+  void _copyToClipboard(BuildContext context) {
+    Clipboard.setData(ClipboardData(text: id));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              Icons.check_circle_outline_rounded,
+              color: AppTheme.success,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'IDをコピーしました',
+              style: TextStyle(color: AppTheme.textPrimary),
+            ),
+          ],
+        ),
+        backgroundColor: AppTheme.bgElevated,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        ),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _copyToClipboard(context),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'ID: $id',
+            style: TextStyle(
+              fontSize: 11,
+              color: AppTheme.textTertiary,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Icon(
+            Icons.copy_rounded,
+            size: 11,
+            color: AppTheme.textTertiary.withValues(alpha: 0.6),
+          ),
+        ],
       ),
     );
   }

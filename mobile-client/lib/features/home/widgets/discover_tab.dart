@@ -56,10 +56,13 @@ class DiscoverTab extends ConsumerWidget {
         final isFullyViewedInSession = viewedUserIds.contains(user.id);
         final isViewed = !user.hasUnviewed || isFullyViewedInSession;
 
+        final hasStory = user.whisperCount > 0;
+
         return DiscoverCard(
           user: user,
           isFollowing: isFollowing,
           isViewed: isViewed,
+          hasStory: hasStory,
           onAvatarTap: () => onUserStoryTap?.call(user),
           onCardTap: () => onUserProfileTap?.call(user),
           onFollowTap: () {

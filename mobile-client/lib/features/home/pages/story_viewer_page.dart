@@ -228,7 +228,7 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
 
       // 視聴記録成功後のみ音声を再生
       final audioUrl = await apiService.getAudioUrl(whisperId: story.id);
-      await _audioPlayer.setSourceUrl(audioUrl);
+      await _audioPlayer.setSource(UrlSource(audioUrl, mimeType: 'audio/mp4'));
       await _audioPlayer.resume();
     } catch (e) {
       debugPrint('Error loading audio: $e');
@@ -374,7 +374,7 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
       child: Scaffold(
         backgroundColor: AppTheme.bgPrimary,
         body: GestureDetector(
-        onTapUp: (details) {
+        onTapUp: _isLoading ? null : (details) {
           final screenWidth = MediaQuery.of(context).size.width;
           if (details.localPosition.dx < screenWidth / 3) {
             _goToPrevious();
@@ -384,45 +384,48 @@ class _StoryViewerPageState extends ConsumerState<StoryViewerPage>
             _togglePlayPause();
           }
         },
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // 背景
-            Image.asset(
-              'assets/main_background.png',
-              fit: BoxFit.cover,
-            ),
-            Container(
-              color: Colors.black.withValues(alpha: 0.6),
-            ),
-
-            // コンテンツ
-            SafeArea(
-              child: Column(
-                children: [
-                  // プログレスバー
-                  _buildProgressBars(),
-
-                  // ヘッダー
-                  _buildHeader(),
-
-                  // メインコンテンツ
-                  Expanded(
-                    child: Center(
-                      child: _isLoading
-                          ? _buildLoadingIndicator()
-                          : _buildAudioVisualizer(),
-                    ),
-                  ),
-
-                  // バナー広告
-                  const BannerAdWidget(),
-
-                  const SizedBox(height: 16),
-                ],
+        child: AbsorbPointer(
+          absorbing: _isLoading,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // 背景
+              Image.asset(
+                'assets/main_background.png',
+                fit: BoxFit.cover,
               ),
-            ),
-          ],
+              Container(
+                color: Colors.black.withValues(alpha: 0.6),
+              ),
+
+              // コンテンツ
+              SafeArea(
+                child: Column(
+                  children: [
+                    // プログレスバー
+                    _buildProgressBars(),
+
+                    // ヘッダー
+                    _buildHeader(),
+
+                    // メインコンテンツ
+                    Expanded(
+                      child: Center(
+                        child: _isLoading
+                            ? _buildLoadingIndicator()
+                            : _buildAudioVisualizer(),
+                      ),
+                    ),
+
+                    // バナー広告
+                    const BannerAdWidget(),
+
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       ),

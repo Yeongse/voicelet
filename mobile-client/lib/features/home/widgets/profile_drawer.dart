@@ -133,6 +133,18 @@ class ProfileDrawer extends ConsumerWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
+          if (profile?.username != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              '@${profile!.username}',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.textSecondary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
           const SizedBox(height: 4),
           // 年齢
           if (profile?.age != null)
@@ -229,13 +241,14 @@ class ProfileDrawer extends ConsumerWidget {
                 );
 
                 if (confirm && context.mounted) {
-                  // signOutの完了を待ってから画面遷移
+                  // async gap前にルーター参照を保持
+                  // （signOut中にcontextがdisposeされても遷移可能にする）
+                  final router = GoRouter.of(context);
+                  Navigator.of(context).pop();
+
                   await ref.read(authProvider.notifier).signOut();
-                  if (context.mounted) {
-                    // ドロワーを閉じてからトップ画面に遷移
-                    Navigator.of(context).pop();
-                    context.go('/');
-                  }
+                  // ルーター参照を使って遷移（context.mountedに依存しない）
+                  router.go('/');
                 }
               },
               icon: Icon(

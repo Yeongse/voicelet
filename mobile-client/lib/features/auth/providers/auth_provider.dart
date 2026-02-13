@@ -345,6 +345,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         // Google Sign-Inが初期化されていない場合は無視
       }
       await _supabase.auth.signOut();
+    } catch (e) {
+      // サインアウトが失敗してもローカル状態はクリアする
+      // （ネットワークエラー等でもユーザーの意図を尊重）
+    } finally {
       state = const AuthStateUnauthenticated();
 
       // ローカルキャッシュを全てクリア
@@ -353,8 +357,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
       // 注意: FutureProvider（myProfileProvider, storiesProvider, discoverProvider）は
       // currentUserIdProviderをwatchしているため、authStateがunauthenticatedになると
       // userIdがnullになり、自動的にローディング状態（Completer.future）になる。
-    } catch (e) {
-      state = AuthStateError(message: 'ログアウトに失敗しました');
     }
   }
 

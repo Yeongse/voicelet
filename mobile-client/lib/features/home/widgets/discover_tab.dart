@@ -27,19 +27,25 @@ class DiscoverTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final discoverAsync = ref.watch(discoverProvider);
     final followingSet = ref.watch(followingStateProvider);
-    final viewedUserIds = ref.watch(viewedUserIdsProvider);
 
-    return discoverAsync.when(
-      data: (users) => _buildContent(users, followingSet, viewedUserIds, ref),
-      loading: () => _buildLoading(),
-      error: (error, _) => _buildError(error),
+    return RefreshIndicator(
+      color: AppTheme.accentPrimary,
+      backgroundColor: AppTheme.bgSecondary,
+      onRefresh: () async {
+        ref.invalidate(discoverProvider);
+        await ref.read(discoverProvider.future);
+      },
+      child: discoverAsync.when(
+        data: (users) => _buildContent(users, followingSet, ref),
+        loading: () => _buildLoading(),
+        error: (error, _) => _buildError(error),
+      ),
     );
   }
 
   Widget _buildContent(
     List<DiscoverUser> users,
     Set<String> followingSet,
-    Set<String> viewedUserIds,
     WidgetRef ref,
   ) {
     if (users.isEmpty) {
@@ -47,14 +53,16 @@ class DiscoverTab extends ConsumerWidget {
     }
 
     return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: users.length,
       itemBuilder: (context, index) {
         final user = users[index];
         final isFollowing = followingSet.contains(user.id);
-        // サーバーからのhasUnviewedを使用し、セッション中の変更も反映
-        final isFullyViewedInSession = viewedUserIds.contains(user.id);
-        final isViewed = !user.hasUnviewed || isFullyViewedInSession;
+        // サーバーからのhasUnviewedのみで判定
+        // ※ viewedUserIdsは使わない（新規投稿追加時にサーバーデータと矛盾するため）
+        // ビューワーから戻った時にdiscoverProviderを再取得するので最新状態が反映される
+        final isViewed = !user.hasUnviewed;
 
         final hasStory = user.whisperCount > 0;
 
@@ -85,6 +93,7 @@ class DiscoverTab extends ConsumerWidget {
 
   Widget _buildLoading() {
     return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: 5,
       itemBuilder: (context, index) => _buildShimmerCard(),
@@ -120,48 +129,64 @@ class DiscoverTab extends ConsumerWidget {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.explore_outlined,
-            size: 64,
-            color: AppTheme.textTertiary.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'おすすめのユーザーが見つかりません',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.textTertiary,
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        SizedBox(
+          height: 300,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.explore_outlined,
+                  size: 64,
+                  color: AppTheme.textTertiary.withValues(alpha: 0.5),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'おすすめのユーザーが見つかりません',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.textTertiary,
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildError(Object error) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline_rounded,
-            size: 48,
-            color: AppTheme.error.withValues(alpha: 0.7),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '読み込みに失敗しました',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.textSecondary,
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        SizedBox(
+          height: 300,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline_rounded,
+                  size: 48,
+                  color: AppTheme.error.withValues(alpha: 0.7),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '読み込みに失敗しました',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

@@ -175,23 +175,27 @@ class _HomePageState extends ConsumerState<HomePage>
   void _navigateToStoryViewer(UserStory story) {
     if (_isNavigatingToViewer) return;
 
-    final viewedUserIds = ref.read(viewedUserIdsProvider);
     final viewedStoryIds = ref.read(viewedStoryIdsProvider);
 
-    // このユーザーの全投稿が視聴済みかチェック
-    final isFullyViewedInSession = viewedUserIds.contains(story.user.id);
+    // 個別ストーリーの視聴状態で判定（サーバー + セッション内）
+    // ※ viewedUserIdsは使わない（新規投稿追加時にサーバーデータと矛盾するため）
     final allStoriesViewed = story.stories.every(
       (s) => s.isViewed || viewedStoryIds.contains(s.id),
     );
 
-    if (isFullyViewedInSession || allStoriesViewed) {
+    if (allStoriesViewed) {
       _showAlreadyViewedToast();
       return;
     }
 
     setState(() => _isNavigatingToViewer = true);
     context.push('/story-viewer', extra: {'story': story}).then((_) {
-      if (mounted) setState(() => _isNavigatingToViewer = false);
+      if (mounted) {
+        setState(() => _isNavigatingToViewer = false);
+        // ストーリービューワーから戻った時にデータを再取得
+        ref.invalidate(storiesProvider);
+        ref.invalidate(discoverProvider);
+      }
     });
   }
 
@@ -367,10 +371,8 @@ class _HomePageState extends ConsumerState<HomePage>
       return;
     }
 
-    final viewedUserIds = ref.read(viewedUserIdsProvider);
-
-    // このユーザーが全投稿視聴済みとしてマークされているかチェック
-    if (viewedUserIds.contains(user.id) || !user.hasUnviewed) {
+    // サーバーからのhasUnviewedで判定（viewedUserIdsは使わない）
+    if (!user.hasUnviewed) {
       _showAlreadyViewedToast();
       return;
     }
@@ -393,7 +395,12 @@ class _HomePageState extends ConsumerState<HomePage>
         await context.push('/story-viewer', extra: {'story': story});
       }
     } finally {
-      if (mounted) setState(() => _isNavigatingToViewer = false);
+      if (mounted) {
+        setState(() => _isNavigatingToViewer = false);
+        // ストーリービューワーから戻った時にデータを再取得
+        ref.invalidate(storiesProvider);
+        ref.invalidate(discoverProvider);
+      }
     }
   }
 

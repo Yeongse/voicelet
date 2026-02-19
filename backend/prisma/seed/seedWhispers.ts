@@ -162,6 +162,7 @@ async function seedWhispersForAll(options: Options, expiresAt: Date) {
           fileName: options.audioFile,
           duration,
           expiresAt,
+          createdAt: new Date(),
         },
         create: {
           id: whisperId,

@@ -18,13 +18,10 @@ class PostingProgress {
   final String? errorMessage;
   final Whisper? whisper;
 
-  const PostingProgress({
-    required this.state,
-    this.errorMessage,
-    this.whisper,
-  });
+  const PostingProgress({required this.state, this.errorMessage, this.whisper});
 
-  factory PostingProgress.idle() => const PostingProgress(state: PostingState.idle);
+  factory PostingProgress.idle() =>
+      const PostingProgress(state: PostingState.idle);
 
   factory PostingProgress.gettingSignedUrl() =>
       const PostingProgress(state: PostingState.gettingSignedUrl);
@@ -72,8 +69,8 @@ final whisperApiServiceProvider = Provider<WhisperApiService>((ref) {
 /// 投稿進捗プロバイダー
 final postingProgressProvider =
     StateNotifierProvider<PostingProgressNotifier, PostingProgress>((ref) {
-  return PostingProgressNotifier(ref.watch(whisperApiServiceProvider));
-});
+      return PostingProgressNotifier(ref.watch(whisperApiServiceProvider));
+    });
 
 class PostingProgressNotifier extends StateNotifier<PostingProgress> {
   final WhisperApiService _apiService;

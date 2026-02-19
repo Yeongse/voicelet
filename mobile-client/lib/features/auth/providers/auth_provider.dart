@@ -97,9 +97,37 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       state = const AuthStateLoading();
 
+      // Supabase.initialize() はトークンリフレッシュを await しないため、
+      // 期限切れトークンが渡される可能性がある。明示的にリフレッシュする。
+      var accessToken = session.accessToken;
+      final expiresAt = session.expiresAt;
+      const expiryMarginSeconds = 60;
+      final needsRefresh = expiresAt != null &&
+          DateTime.now().isAfter(
+            DateTime.fromMillisecondsSinceEpoch(
+              (expiresAt - expiryMarginSeconds) * 1000,
+            ),
+          );
+
+      if (needsRefresh) {
+        try {
+          final refreshed = await _supabase.auth.refreshSession();
+          if (refreshed.session == null) {
+            state = const AuthStateUnauthenticated();
+            _clearLocalCaches();
+            return;
+          }
+          accessToken = refreshed.session!.accessToken;
+        } catch (e) {
+          state = const AuthStateUnauthenticated();
+          _clearLocalCaches();
+          return;
+        }
+      }
+
       final response = await ApiClient().dio.post(
         '/api/auth/callback',
-        data: {'accessToken': session.accessToken},
+        data: {'accessToken': accessToken},
       );
 
       final data = response.data as Map<String, dynamic>;

@@ -38,7 +38,7 @@
 	<key>NSUserTrackingUsageDescription</key>
 	<string>パーソナライズされた広告を表示するために使用します</string>
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<string>ca-app-pub-6257323478670896~6420539588</string>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>

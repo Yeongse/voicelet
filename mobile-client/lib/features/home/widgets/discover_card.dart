@@ -7,6 +7,7 @@ class DiscoverCard extends StatelessWidget {
   final DiscoverUser user;
   final bool isFollowing;
   final bool isViewed;
+  final bool hasStory;
   final VoidCallback? onAvatarTap;
   final VoidCallback? onFollowTap;
   final VoidCallback? onCardTap;
@@ -16,6 +17,7 @@ class DiscoverCard extends StatelessWidget {
     required this.user,
     this.isFollowing = false,
     this.isViewed = false,
+    this.hasStory = true,
     this.onAvatarTap,
     this.onFollowTap,
     this.onCardTap,
@@ -36,16 +38,18 @@ class DiscoverCard extends StatelessWidget {
       child: Row(
         children: [
           // アバター（タップでストーリー再生）
+          // 投稿がない場合は枠線なし＆タップ無効
           GestureDetector(
-            onTap: onAvatarTap,
+            onTap: hasStory ? onAvatarTap : null,
             child: Container(
               width: 56,
               height: 56,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                // 視聴済みの場合はグレーボーダー、未視聴はグラデーション
-                gradient: isViewed ? null : AppTheme.gradientAccent,
-                border: isViewed
+                // 投稿あり＆未視聴の場合はグラデーション
+                gradient: (hasStory && !isViewed) ? AppTheme.gradientAccent : null,
+                // 投稿あり＆視聴済みの場合はグレーボーダー、投稿なしは枠線なし
+                border: (hasStory && isViewed)
                     ? Border.all(
                         color: AppTheme.textTertiary.withValues(alpha: 0.5),
                         width: 2.5,

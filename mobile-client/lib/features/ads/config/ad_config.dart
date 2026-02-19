@@ -15,7 +15,7 @@ class AdConfig {
   /// Note: Android/iOS のネイティブ設定も本番用に更新が必要
   static String get appId {
     if (isProduction) {
-      return 'ca-app-pub-6257323478670896~YYYYY'; // TODO: AdMobコンソールでApp IDを確認
+      return 'ca-app-pub-6257323478670896~6420539588';
     }
     // Test App IDs
     return Platform.isAndroid

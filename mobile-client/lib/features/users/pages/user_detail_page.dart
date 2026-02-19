@@ -133,6 +133,28 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
                       ],
                     ],
                   ),
+
+                  // ユーザー名
+                  if (profile.username != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '@${profile.username}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+
+                  // ID
+                  const SizedBox(height: 4),
+                  Text(
+                    'ID: ${profile.id}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.textTertiary,
+                    ),
+                  ),
                   const SizedBox(height: 8),
 
                   // Bio
@@ -259,16 +281,14 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
   }
 
   Future<void> _playStory(DiscoverStoriesResponse response, Profile profile, int startIndex) async {
-    final viewedUserIds = ref.read(viewedUserIdsProvider);
     final viewedStoryIds = ref.read(viewedStoryIdsProvider);
 
-    // このユーザーの全投稿が視聴済みかチェック
-    final isFullyViewedInSession = viewedUserIds.contains(widget.userId);
+    // 個別ストーリーの視聴状態で判定（サーバー + セッション内）
     final allStoriesViewed = response.stories.every(
       (s) => s.isViewed || viewedStoryIds.contains(s.id),
     );
 
-    if (isFullyViewedInSession || allStoriesViewed) {
+    if (allStoriesViewed) {
       _showAlreadyViewedToast();
       return;
     }

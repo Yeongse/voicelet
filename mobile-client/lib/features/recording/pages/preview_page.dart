@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:audioplayers/audioplayers.dart';
+import '../../../core/services/review_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/dialogs.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -641,6 +642,8 @@ class _PreviewPageState extends ConsumerState<PreviewPage>
       _showSuccessSnackBar('投稿しました');
       // myWhispersProviderをinvalidateして投稿直後にホーム画面に反映
       ref.invalidate(myWhispersProvider);
+      // 初回投稿を記録（レビュー要求のため）
+      ref.read(reviewServiceProvider).markFirstWhisperPosted();
       // 成功後、ホーム画面に戻る
       await Future.delayed(const Duration(milliseconds: 500));
       if (mounted) {

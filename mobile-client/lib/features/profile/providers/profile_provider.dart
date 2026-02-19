@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -12,6 +13,13 @@ final profileApiServiceProvider = Provider((ref) => ProfileApiService());
 
 /// 自分のプロフィールプロバイダー
 final myProfileProvider = FutureProvider<Profile>((ref) async {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) {
+    // 認証完了まで待機（空データを返さない）
+    final completer = Completer<Profile>();
+    return completer.future; // 永遠に完了しないFuture
+  }
+
   final service = ref.watch(profileApiServiceProvider);
   return service.getMyProfile();
 });

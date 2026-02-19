@@ -36,6 +36,7 @@ class _HomePageState extends ConsumerState<HomePage>
   final GlobalKey _profileButtonKey = GlobalKey();
 
   bool _tutorialChecked = false;
+  bool _isNavigatingToViewer = false;
 
   @override
   void initState() {
@@ -172,21 +173,30 @@ class _HomePageState extends ConsumerState<HomePage>
   }
 
   void _navigateToStoryViewer(UserStory story) {
-    final viewedUserIds = ref.read(viewedUserIdsProvider);
+    if (_isNavigatingToViewer) return;
+
     final viewedStoryIds = ref.read(viewedStoryIdsProvider);
 
-    // このユーザーの全投稿が視聴済みかチェック
-    final isFullyViewedInSession = viewedUserIds.contains(story.user.id);
+    // 個別ストーリーの視聴状態で判定（サーバー + セッション内）
+    // ※ viewedUserIdsは使わない（新規投稿追加時にサーバーデータと矛盾するため）
     final allStoriesViewed = story.stories.every(
       (s) => s.isViewed || viewedStoryIds.contains(s.id),
     );
 
-    if (isFullyViewedInSession || allStoriesViewed) {
+    if (allStoriesViewed) {
       _showAlreadyViewedToast();
       return;
     }
 
-    context.push('/story-viewer', extra: {'story': story});
+    setState(() => _isNavigatingToViewer = true);
+    context.push('/story-viewer', extra: {'story': story}).then((_) {
+      if (mounted) {
+        setState(() => _isNavigatingToViewer = false);
+        // ストーリービューワーから戻った時にデータを再取得
+        ref.invalidate(storiesProvider);
+        ref.invalidate(discoverProvider);
+      }
+    });
   }
 
   void _showAlreadyViewedToast() {
@@ -354,28 +364,43 @@ class _HomePageState extends ConsumerState<HomePage>
   }
 
   Future<void> _handleDiscoverUserTap(DiscoverUser user) async {
-    final viewedUserIds = ref.read(viewedUserIdsProvider);
+    if (_isNavigatingToViewer) return;
 
-    // このユーザーが全投稿視聴済みとしてマークされているかチェック
-    if (viewedUserIds.contains(user.id) || !user.hasUnviewed) {
+    // 投稿がない場合は何もしない
+    if (user.whisperCount == 0) {
+      return;
+    }
+
+    // サーバーからのhasUnviewedで判定（viewedUserIdsは使わない）
+    if (!user.hasUnviewed) {
       _showAlreadyViewedToast();
       return;
     }
 
-    final story = await ref.read(discoverUserStoriesProvider(user.id).future);
-    if (story != null && mounted) {
-      // 取得したストーリーも視聴済みかチェック
-      final viewedStoryIds = ref.read(viewedStoryIdsProvider);
-      final allStoriesViewed = story.stories.every(
-        (s) => s.isViewed || viewedStoryIds.contains(s.id),
-      );
+    setState(() => _isNavigatingToViewer = true);
+    try {
+      final story = await ref.read(discoverUserStoriesProvider(user.id).future);
+      if (story != null && mounted) {
+        // 取得したストーリーも視聴済みかチェック
+        final viewedStoryIds = ref.read(viewedStoryIdsProvider);
+        final allStoriesViewed = story.stories.every(
+          (s) => s.isViewed || viewedStoryIds.contains(s.id),
+        );
 
-      if (allStoriesViewed) {
-        _showAlreadyViewedToast();
-        return;
+        if (allStoriesViewed) {
+          _showAlreadyViewedToast();
+          return;
+        }
+
+        await context.push('/story-viewer', extra: {'story': story});
       }
-
-      context.push('/story-viewer', extra: {'story': story});
+    } finally {
+      if (mounted) {
+        setState(() => _isNavigatingToViewer = false);
+        // ストーリービューワーから戻った時にデータを再取得
+        ref.invalidate(storiesProvider);
+        ref.invalidate(discoverProvider);
+      }
     }
   }
 
@@ -480,6 +505,16 @@ class _HomePageState extends ConsumerState<HomePage>
               ],
             ),
           ),
+          // ローディングオーバーレイ（視聴画面遷移中）
+          if (_isNavigatingToViewer)
+            Container(
+              color: Colors.black.withValues(alpha: 0.5),
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: AppTheme.accentPrimary,
+                ),
+              ),
+            ),
         ],
       ),
     );

@@ -49,9 +49,12 @@ class ProfilePage extends ConsumerWidget {
                     );
 
                     if (confirm && context.mounted) {
-                      // 先に画面遷移してからサインアウトを実行
-                      context.go('/login');
-                      ref.read(authProvider.notifier).signOut();
+                      // async gap前にルーター参照を保持
+                      final router = GoRouter.of(context);
+
+                      await ref.read(authProvider.notifier).signOut();
+                      // ルーター参照を使って遷移（context.mountedに依存しない）
+                      router.go('/');
                     }
                   },
                 ),
@@ -223,6 +226,10 @@ class _ProfileContent extends ConsumerWidget {
             const SizedBox(height: 4),
             _UsernameDisplay(username: profile.username!),
           ],
+          const SizedBox(height: 4),
+
+          // ID
+          _IdDisplay(id: profile.id),
           const SizedBox(height: 8),
 
           // 年齢
@@ -300,12 +307,7 @@ class _ProfileContent extends ConsumerWidget {
               value: profile.birthMonth!,
             ),
           ],
-
-          // 法的情報セクション（自分のプロフィールのみ）
-          if (isMyProfile) ...[
-            const SizedBox(height: 32),
-            const _LegalLinksSection(),
-          ],
+          const SizedBox(height: 32),
         ],
       ),
     );
@@ -726,88 +728,6 @@ class _FollowCountRow extends ConsumerWidget {
 }
 
 /// ユーザー名表示ウィジェット（タップでコピー）
-/// 法的情報リンクセクション
-class _LegalLinksSection extends StatelessWidget {
-  const _LegalLinksSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.bgSecondary,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppTheme.textTertiary.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '法的情報',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _buildLegalLinkTile(
-            context,
-            icon: Icons.description_outlined,
-            label: '利用規約',
-            route: '/legal/terms-of-service',
-          ),
-          const SizedBox(height: 8),
-          _buildLegalLinkTile(
-            context,
-            icon: Icons.privacy_tip_outlined,
-            label: 'プライバシーポリシー',
-            route: '/legal/privacy-policy',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLegalLinkTile(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required String route,
-  }) {
-    return InkWell(
-      onTap: () => context.push(route),
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-        child: Row(
-          children: [
-            Icon(icon, size: 20, color: AppTheme.textSecondary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 15,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-            ),
-            Icon(
-              Icons.chevron_right,
-              size: 20,
-              color: AppTheme.textTertiary,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _UsernameDisplay extends StatelessWidget {
   final String username;
 
@@ -870,6 +790,67 @@ class _UsernameDisplay extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// ID表示ウィジェット（タップでコピー）
+class _IdDisplay extends StatelessWidget {
+  final String id;
+
+  const _IdDisplay({required this.id});
+
+  void _copyToClipboard(BuildContext context) {
+    Clipboard.setData(ClipboardData(text: id));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              Icons.check_circle_outline_rounded,
+              color: AppTheme.success,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'IDをコピーしました',
+              style: TextStyle(color: AppTheme.textPrimary),
+            ),
+          ],
+        ),
+        backgroundColor: AppTheme.bgElevated,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        ),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _copyToClipboard(context),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'ID: $id',
+            style: TextStyle(
+              fontSize: 11,
+              color: AppTheme.textTertiary,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Icon(
+            Icons.copy_rounded,
+            size: 11,
+            color: AppTheme.textTertiary.withValues(alpha: 0.6),
+          ),
+        ],
       ),
     );
   }

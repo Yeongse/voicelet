@@ -27,8 +27,9 @@ export default async function (fastify: ServerInstance) {
       const { query, userId, page, limit } = request.query
       const { skip, take } = calculatePagination({ page, limit })
 
-      // 部分一致検索（name または username）
+      // 部分一致検索（name または username）、自分自身は除外
       const whereCondition = {
+        ...(userId ? { NOT: { id: userId } } : {}),
         OR: [
           {
             name: {

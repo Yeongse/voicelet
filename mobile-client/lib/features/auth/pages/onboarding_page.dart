@@ -452,8 +452,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
             if (username.length < 3) {
               return 'ユーザー名は3文字以上です';
             }
-            if (!RegExp(r'^[a-zA-Z0-9_.]+$').hasMatch(username)) {
-              return '半角英数字、アンダースコア、ピリオドのみ使用できます';
+            if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(username)) {
+              return '半角英数字とアンダースコアのみ使用できます';
             }
             return null;
           },
@@ -481,7 +481,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
       case UsernameAvailability.invalid:
         return '無効なユーザー名です';
       case UsernameAvailability.unknown:
-        return '半角英数字、アンダースコア、ピリオドのみ使用できます';
+        return '半角英数字とアンダースコアのみ使用できます';
     }
   }
 

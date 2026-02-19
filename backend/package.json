@@ -11,6 +11,9 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed/main.ts",
+    "db:seed:users": "tsx prisma/seed/seedUsers.ts",
+    "db:seed:follows": "tsx prisma/seed/seedFollows.ts",
+    "db:seed:whispers": "tsx prisma/seed/seedWhispers.ts",
     "db:seed-second": "tsx prisma/seed/viewerTestSeed.ts",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
@@ -33,6 +36,7 @@
     "dotenv": "^17.2.3",
     "fastify": "^5.6.2",
     "fastify-type-provider-zod": "^5.1.0",
+    "jose": "^5.0.0",
     "pino-pretty": "^13.1.3",
     "zod": "^4.3.5"
   },

@@ -19,17 +19,25 @@ class FollowingTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final storiesAsync = ref.watch(storiesProvider);
-    final viewedUserIds = ref.watch(viewedUserIdsProvider);
     final viewedStoryIds = ref.watch(viewedStoryIdsProvider);
 
     return Column(
       children: [
         Expanded(
-          child: storiesAsync.when(
-            data: (stories) =>
-                _buildContent(stories, viewedUserIds, viewedStoryIds),
-            loading: () => _buildLoading(),
-            error: (error, _) => _buildError(error),
+          child: RefreshIndicator(
+            color: AppTheme.accentPrimary,
+            backgroundColor: AppTheme.bgSecondary,
+            onRefresh: () async {
+              ref.invalidate(storiesProvider);
+              ref.invalidate(myWhispersProvider);
+              await ref.read(storiesProvider.future);
+            },
+            child: storiesAsync.when(
+              data: (stories) =>
+                  _buildContent(stories, viewedStoryIds),
+              loading: () => _buildLoading(),
+              error: (error, _) => _buildError(error),
+            ),
           ),
         ),
         // バナー広告（画面下部に固定表示）
@@ -43,7 +51,6 @@ class FollowingTab extends ConsumerWidget {
 
   Widget _buildContent(
     List<UserStory> stories,
-    Set<String> viewedUserIds,
     Set<String> viewedStoryIds,
   ) {
     if (stories.isEmpty) {
@@ -51,6 +58,7 @@ class FollowingTab extends ConsumerWidget {
     }
 
     return GridView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
@@ -61,13 +69,11 @@ class FollowingTab extends ConsumerWidget {
       itemCount: stories.length,
       itemBuilder: (context, index) {
         final story = stories[index];
-        // ユーザーが全投稿視聴済みとしてマークされているか確認
-        final isFullyViewedInSession = viewedUserIds.contains(story.user.id);
-        // 個別のストーリー視聴状態も考慮して未視聴があるか確認
+        // 個別のストーリー視聴状態で未視聴があるか確認
         // (サーバーからのisViewedフラグ + セッション中に視聴したストーリー)
-        final hasUnviewedStories = story.stories.any((s) =>
+        // ※ viewedUserIdsは使わない（新規投稿追加時にサーバーデータと矛盾するため）
+        final hasUnviewed = story.stories.any((s) =>
             !s.isViewed && !viewedStoryIds.contains(s.id));
-        final hasUnviewed = hasUnviewedStories && !isFullyViewedInSession;
         return StoryAvatar(
           avatarUrl: story.user.avatarUrl,
           name: story.user.name,
@@ -81,6 +87,7 @@ class FollowingTab extends ConsumerWidget {
 
   Widget _buildLoading() {
     return GridView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
@@ -105,56 +112,72 @@ class FollowingTab extends ConsumerWidget {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.people_outline_rounded,
-            size: 64,
-            color: AppTheme.textPrimary.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'フォロー中のユーザーの投稿がありません',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.textPrimary.withValues(alpha: 0.85),
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        SizedBox(
+          height: 300,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.people_outline_rounded,
+                  size: 64,
+                  color: AppTheme.textPrimary.withValues(alpha: 0.5),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'フォロー中のユーザーの投稿がありません',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.textPrimary.withValues(alpha: 0.85),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'おすすめタブからユーザーをフォローしてみましょう',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textPrimary.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'おすすめタブからユーザーをフォローしてみましょう',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.textPrimary.withValues(alpha: 0.7),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildError(Object error) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline_rounded,
-            size: 48,
-            color: AppTheme.error.withValues(alpha: 0.7),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '読み込みに失敗しました',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.textSecondary,
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        SizedBox(
+          height: 300,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline_rounded,
+                  size: 48,
+                  color: AppTheme.error.withValues(alpha: 0.7),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '読み込みに失敗しました',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

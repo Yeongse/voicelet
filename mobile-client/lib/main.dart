@@ -26,6 +26,7 @@ import 'features/follow/pages/follow_list_page.dart';
 import 'features/search/pages/search_page.dart';
 import 'features/qr_code/pages/qr_code_page.dart';
 import 'features/legal/pages/legal_page.dart';
+import 'features/settings/pages/settings_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,99 +43,109 @@ Future<void> main() async {
   runApp(const ProviderScope(child: MyApp()));
 }
 
-final _router = GoRouter(
-  initialLocation: '/',
-  routes: [
-    GoRoute(path: '/', builder: (context, state) => const SplashPage()),
-    GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
-    GoRoute(
-      path: '/auth/signup',
-      builder: (context, state) => const SignUpPage(),
-    ),
-    GoRoute(
-      path: '/auth/onboarding',
-      builder: (context, state) => const OnboardingPage(),
-    ),
-    GoRoute(path: '/users', builder: (context, state) => const UserListPage()),
-    GoRoute(
-      path: '/users/:userId',
-      builder: (context, state) {
-        final userId = state.pathParameters['userId']!;
-        return UserDetailPage(userId: userId);
-      },
-    ),
-    GoRoute(
-      path: '/users/:userId/follow-list',
-      builder: (context, state) {
-        final userId = state.pathParameters['userId']!;
-        final extra = state.extra as Map<String, dynamic>?;
-        final initialType = extra?['initialType'] == 'followers'
-            ? FollowListType.followers
-            : FollowListType.following;
-        return FollowListPage(userId: userId, initialType: initialType);
-      },
-    ),
-    GoRoute(
-      path: '/recording',
-      builder: (context, state) => const RecordingPage(),
-    ),
-    GoRoute(
-      path: '/recording/preview',
-      builder: (context, state) {
-        final extra = state.extra as Map<String, dynamic>;
-        return PreviewPage(
-          filePath: extra['filePath'] as String,
-          fileName: extra['fileName'] as String,
-          duration: extra['duration'] as Duration,
-        );
-      },
-    ),
-    GoRoute(path: '/home', builder: (context, state) => const HomePage()),
-    GoRoute(
-      path: '/story-viewer',
-      builder: (context, state) {
-        final extra = state.extra as Map<String, dynamic>;
-        final userStory = extra['story'] as UserStory;
-        return StoryViewerPage(story: userStory);
-      },
-    ),
-    GoRoute(
-      path: '/my-story-viewer',
-      builder: (context, state) {
-        final extra = state.extra as Map<String, dynamic>;
-        final whisper = extra['whisper'] as MyWhisper;
-        return MyStoryViewerPage(whisper: whisper);
-      },
-    ),
-    GoRoute(path: '/profile', builder: (context, state) => const ProfilePage()),
-    GoRoute(
-      path: '/profile/edit',
-      builder: (context, state) => const ProfileEditPage(),
-    ),
-    GoRoute(
-      path: '/follow-requests',
-      builder: (context, state) => const FollowRequestsPage(),
-    ),
-    GoRoute(path: '/search', builder: (context, state) => const SearchPage()),
-    GoRoute(path: '/qr-code', builder: (context, state) => const QrCodePage()),
-    GoRoute(
-      path: '/legal/privacy-policy',
-      builder: (context, state) =>
-          const LegalPage(type: LegalDocumentType.privacyPolicy),
-    ),
-    GoRoute(
-      path: '/legal/terms-of-service',
-      builder: (context, state) =>
-          const LegalPage(type: LegalDocumentType.termsOfService),
-    ),
-  ],
-);
+/// ルーター
+/// 注意: 認証状態に応じた画面遷移は各ページで個別に処理する。
+/// - スプラッシュ画面: 認証状態を確認してホーム/オンボーディング/ログインボタン表示
+/// - プロフィール画面: ログアウト時に明示的にログイン画面へ遷移
+/// - オンボーディング画面: 登録完了時に明示的にホーム画面へ遷移
+final routerProvider = Provider<GoRouter>((ref) {
+  return GoRouter(
+    initialLocation: '/',
+    routes: [
+      GoRoute(path: '/', builder: (context, state) => const SplashPage()),
+      GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
+      GoRoute(
+        path: '/auth/signup',
+        builder: (context, state) => const SignUpPage(),
+      ),
+      GoRoute(
+        path: '/auth/onboarding',
+        builder: (context, state) => const OnboardingPage(),
+      ),
+      GoRoute(path: '/users', builder: (context, state) => const UserListPage()),
+      GoRoute(
+        path: '/users/:userId',
+        builder: (context, state) {
+          final userId = state.pathParameters['userId']!;
+          return UserDetailPage(userId: userId);
+        },
+      ),
+      GoRoute(
+        path: '/users/:userId/follow-list',
+        builder: (context, state) {
+          final userId = state.pathParameters['userId']!;
+          final extra = state.extra as Map<String, dynamic>?;
+          final initialType = extra?['initialType'] == 'followers'
+              ? FollowListType.followers
+              : FollowListType.following;
+          return FollowListPage(userId: userId, initialType: initialType);
+        },
+      ),
+      GoRoute(
+        path: '/recording',
+        builder: (context, state) => const RecordingPage(),
+      ),
+      GoRoute(
+        path: '/recording/preview',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return PreviewPage(
+            filePath: extra['filePath'] as String,
+            fileName: extra['fileName'] as String,
+            duration: extra['duration'] as Duration,
+          );
+        },
+      ),
+      GoRoute(path: '/home', builder: (context, state) => const HomePage()),
+      GoRoute(
+        path: '/story-viewer',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          final userStory = extra['story'] as UserStory;
+          return StoryViewerPage(story: userStory);
+        },
+      ),
+      GoRoute(
+        path: '/my-story-viewer',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          final whisper = extra['whisper'] as MyWhisper;
+          return MyStoryViewerPage(whisper: whisper);
+        },
+      ),
+      GoRoute(path: '/profile', builder: (context, state) => const ProfilePage()),
+      GoRoute(
+        path: '/profile/edit',
+        builder: (context, state) => const ProfileEditPage(),
+      ),
+      GoRoute(
+        path: '/follow-requests',
+        builder: (context, state) => const FollowRequestsPage(),
+      ),
+      GoRoute(path: '/search', builder: (context, state) => const SearchPage()),
+      GoRoute(path: '/qr-code', builder: (context, state) => const QrCodePage()),
+      GoRoute(path: '/settings', builder: (context, state) => const SettingsPage()),
+      GoRoute(
+        path: '/legal/privacy-policy',
+        builder: (context, state) =>
+            const LegalPage(type: LegalDocumentType.privacyPolicy),
+      ),
+      GoRoute(
+        path: '/legal/terms-of-service',
+        builder: (context, state) =>
+            const LegalPage(type: LegalDocumentType.termsOfService),
+      ),
+    ],
+  );
+});
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+
     return MaterialApp.router(
       title: 'Voicelet',
       debugShowCheckedModeBanner: false,
@@ -146,7 +157,7 @@ class MyApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [Locale('en'), Locale('ja')],
-      routerConfig: _router,
+      routerConfig: router,
     );
   }
 }

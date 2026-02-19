@@ -18,7 +18,7 @@ class WhisperApiService {
   final ApiClient _apiClient;
 
   WhisperApiService({ApiClient? apiClient})
-      : _apiClient = apiClient ?? ApiClient();
+    : _apiClient = apiClient ?? ApiClient();
 
   /// 署名付きURLを取得
   Future<SignedUrlResponse> getSignedUrl({
@@ -28,10 +28,7 @@ class WhisperApiService {
     try {
       final response = await _apiClient.dio.post(
         '/api/whispers/signed-url',
-        data: {
-          'fileName': fileName,
-          'userId': userId,
-        },
+        data: {'fileName': fileName, 'userId': userId},
       );
 
       return SignedUrlResponse.fromJson(response.data);
@@ -81,11 +78,7 @@ class WhisperApiService {
     try {
       final response = await _apiClient.dio.post(
         '/api/whispers',
-        data: {
-          'userId': userId,
-          'fileName': fileName,
-          'duration': duration,
-        },
+        data: {'userId': userId, 'fileName': fileName, 'duration': duration},
       );
 
       return CreateWhisperResponse.fromJson(response.data);
